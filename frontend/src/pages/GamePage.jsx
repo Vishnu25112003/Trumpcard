@@ -302,7 +302,7 @@ export default function GamePage() {
       setPhase('playing');
       resetTimer(turnDuration);
       if (skippedPlayer) {
-        pushNote(`⏭️ ${skippedPlayer} skipped (${skipReason === 'timeout' ? 'timed out' : 'disconnected'})`, 'warn');
+        pushNote(`${skippedPlayer} skipped — ${skipReason === 'timeout' ? 'timed out' : 'disconnected'}`, 'warn');
       }
     };
 
@@ -320,14 +320,14 @@ export default function GamePage() {
 
     const onLifeLost = ({ playerName: pn, livesLeft, reason }) => {
       setPlayers((prev) => prev.map((p) => p.name === pn ? { ...p, lives: livesLeft } : p));
-      pushNote(`⚠️ ${pn} lost a life (${livesLeft} left) — ${reason === 'timeout' ? 'timed out' : 'disconnected'}`, 'warn');
+      pushNote(`${pn} lost a life · ${livesLeft} remaining`, 'warn');
     };
     const onEliminated = ({ playerName: pn, reason, players: pl }) => {
       if (pl) setPlayers(pl);
-      pushNote(`❌ ${pn} eliminated (${reason === 'disconnect' ? 'no lives left' : 'no cards'})`, 'error');
+      pushNote(`${pn} was eliminated`, 'error');
     };
     const onOver = ({ winner }) => { setGameWinner(winner); setPhase('gameover'); stopTimer(); };
-    const onErr  = (msg) => pushNote(`⚠️ ${msg}`, 'error');
+    const onErr  = (msg) => pushNote(msg, 'error');
 
     socket.on('game_state_sync',   onSync);
     socket.on('game_started',      onStarted);
@@ -407,42 +407,85 @@ export default function GamePage() {
         timer={phase === 'playing' && !iAmEliminated ? timeLeft : null}
       />
 
-      {/* "Your Turn" banner */}
+      {/* "Your Turn" toast — anchored below TopBar, never covers the card */}
       {showBanner && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 60, display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+        <div style={{
+          position: 'fixed',
+          top: 62,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 60,
+          pointerEvents: 'none',
+          animation: 'banner-drop 0.35s cubic-bezier(0.34, 1.36, 0.64, 1)',
+        }}>
           <div style={{
-            background: 'linear-gradient(135deg, var(--purple-bright), var(--purple))',
-            color: 'white',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            background: 'linear-gradient(135deg, rgba(108,63,190,0.96), rgba(90,40,180,0.92))',
+            backdropFilter: 'blur(14px)',
+            WebkitBackdropFilter: 'blur(14px)',
+            border: '1px solid rgba(170,110,255,0.45)',
+            color: '#fff',
             fontFamily: 'var(--font-display)',
-            fontSize: 22,
+            fontSize: 11,
             fontWeight: 700,
-            letterSpacing: '0.12em',
-            padding: '16px 32px',
-            borderRadius: 18,
-            boxShadow: '0 8px 32px var(--purple-glow)',
-            animation: 'banner-pop 0.4s cubic-bezier(0.34, 1.36, 0.64, 1)',
+            letterSpacing: '0.22em',
+            padding: '6px 18px 6px 14px',
+            borderRadius: 24,
+            boxShadow: '0 4px 20px rgba(108,63,190,0.55), 0 1px 0 rgba(255,255,255,0.08) inset',
+            whiteSpace: 'nowrap',
+            textTransform: 'uppercase',
           }}>
-            ⚔️ Your Turn!
+            <span style={{
+              width: 7,
+              height: 7,
+              borderRadius: '50%',
+              background: 'var(--gold)',
+              boxShadow: '0 0 8px rgba(240,199,80,0.9)',
+              display: 'inline-block',
+              animation: 'pulse-dot 1s ease-in-out infinite',
+              flexShrink: 0,
+            }} />
+            Your Turn
           </div>
         </div>
       )}
 
       {/* Notifications */}
-      <div style={{ position: 'fixed', top: 80, right: 12, zIndex: 70, display: 'flex', flexDirection: 'column', gap: 8, pointerEvents: 'none', maxWidth: 260 }}>
-        {notifications.map((n) => (
-          <div key={n.id} style={{
-            padding: '8px 14px',
-            borderRadius: 12,
-            fontSize: 12,
-            fontWeight: 500,
-            backdropFilter: 'blur(8px)',
-            background: n.type === 'error' ? 'rgba(255,77,109,0.18)' : n.type === 'warn' ? 'rgba(240,199,80,0.15)' : 'var(--surface-strong)',
-            border: `1px solid ${n.type === 'error' ? 'rgba(255,77,109,0.4)' : n.type === 'warn' ? 'rgba(240,199,80,0.3)' : 'var(--line)'}`,
-            color: n.type === 'error' ? 'var(--red)' : n.type === 'warn' ? 'var(--gold)' : 'var(--text-soft)',
-          }}>
-            {n.text}
-          </div>
-        ))}
+      <div style={{ position: 'fixed', top: 80, right: 12, zIndex: 70, display: 'flex', flexDirection: 'column', gap: 6, pointerEvents: 'none', maxWidth: 240 }}>
+        {notifications.map((n) => {
+          const accentColor = n.type === 'error' ? 'var(--red)' : n.type === 'warn' ? 'var(--gold)' : 'var(--purple-soft)';
+          return (
+            <div key={n.id} style={{
+              display: 'flex',
+              alignItems: 'flex-start',
+              gap: 9,
+              padding: '8px 12px',
+              borderRadius: 10,
+              fontSize: 11,
+              fontWeight: 500,
+              lineHeight: 1.4,
+              backdropFilter: 'blur(10px)',
+              WebkitBackdropFilter: 'blur(10px)',
+              background: n.type === 'error' ? 'rgba(255,77,109,0.14)' : n.type === 'warn' ? 'rgba(240,199,80,0.12)' : 'rgba(30,18,60,0.75)',
+              border: `1px solid ${n.type === 'error' ? 'rgba(255,77,109,0.35)' : n.type === 'warn' ? 'rgba(240,199,80,0.25)' : 'rgba(255,255,255,0.07)'}`,
+              borderLeft: `3px solid ${accentColor}`,
+              color: n.type === 'error' ? 'var(--red)' : n.type === 'warn' ? 'var(--gold)' : 'var(--text-soft)',
+              animation: 'note-in 0.25s ease',
+            }}>
+              <span style={{
+                width: 6,
+                height: 6,
+                borderRadius: '50%',
+                background: accentColor,
+                marginTop: 3,
+                flexShrink: 0,
+              }} />
+              {n.text}
+            </div>
+          );
+        })}
       </div>
 
       {/* Main game stage */}
@@ -509,9 +552,32 @@ export default function GamePage() {
             <div className="info">
               <span className="n">{p.name}{p.name === playerName ? ' (you)' : ''}</span>
               <span className="c">{p.isEliminated ? 'eliminated' : `${p.cardCount ?? '?'} cards`}</span>
+              {!p.isEliminated && p.lives != null && p.lives > 0 && (
+                <span style={{ display: 'flex', gap: 3, marginTop: 3 }}>
+                  {Array.from({ length: p.lives }, (_, li) => (
+                    <span key={li} style={{
+                      width: 6,
+                      height: 6,
+                      borderRadius: '50%',
+                      background: 'var(--red)',
+                      boxShadow: '0 0 5px rgba(255,77,109,0.7)',
+                      display: 'inline-block',
+                    }} />
+                  ))}
+                </span>
+              )}
             </div>
             {p.name === currentPlayer && phase === 'playing' && (
-              <span className="cards-count">⚔️</span>
+              <span style={{
+                width: 8,
+                height: 8,
+                borderRadius: '50%',
+                background: 'var(--purple-bright)',
+                boxShadow: '0 0 8px var(--purple-glow)',
+                display: 'inline-block',
+                animation: 'pulse-dot 1.1s ease-in-out infinite',
+                flexShrink: 0,
+              }} />
             )}
           </div>
         ))}
@@ -528,7 +594,9 @@ export default function GamePage() {
 
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes banner-pop { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        @keyframes banner-drop { from { transform: translateY(-28px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes pulse-dot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.6); } }
+        @keyframes note-in { from { transform: translateX(16px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
       `}</style>
     </>
   );

@@ -87,124 +87,198 @@ function GameOverScreen({ winner, playerName, navigate }) {
   );
 }
 
-// ── ComparisonOverlay ──────────────────────────────────────────────────────────
+// ── ComparisonOverlay — N-player ──────────────────────────────────────────────
 function ComparisonOverlay({ roundResult, myName, onClose }) {
   const [stage, setStage] = useState(0);
-  // stage 0 = banner only, 1 = cards in, 2 = bars animate, 3 = winner highlight + close button
+  // stage 0 = banner only, 1 = all cards in, 2 = stat bars, 3 = winner text + close
 
   const { winner, isDraw, decidingStat, cards } = roundResult;
-  const statMeta = STATS.find((s) => s.key === decidingStat) || STATS[0];
-  const left  = cards[0];
-  const right = cards[1];
+  const statMeta  = STATS.find((s) => s.key === decidingStat) || STATS[0];
+  const maxVal    = Math.max(...cards.map((c) => getStat(c.card, decidingStat)), 1);
+  const cardSize  = cards.length <= 2 ? 'md' : 'sm';
+  const POP_ANIMS = ['card-pop-l', 'card-pop-r', 'card-pop-up', 'card-pop-l'];
 
   useEffect(() => {
     const timers = [
       setTimeout(() => setStage(1), 300),
-      setTimeout(() => setStage(2), 900),
-      setTimeout(() => setStage(3), 1800),
+      setTimeout(() => setStage(2), 950),
+      setTimeout(() => setStage(3), 1900),
     ];
     return () => timers.forEach(clearTimeout);
   }, []);
 
-  // Auto-close after stage 3 + short delay
   useEffect(() => {
     if (stage < 3) return;
     const t = setTimeout(() => onClose(), 3800);
     return () => clearTimeout(t);
   }, [stage, onClose]);
 
-  const getWinSide = () => {
-    if (isDraw || !winner) return null;
-    if (left?.playerName === winner) return 'left';
-    if (right?.playerName === winner) return 'right';
-    return null;
-  };
-  const winSide = getWinSide();
-
-  // Compute bar widths (0-100 based on relative values)
-  const allStats = STATS.map((s) => s.key);
-  const lVal = left  ? getStat(left.card,  decidingStat) : 0;
-  const rVal = right ? getStat(right.card, decidingStat) : 0;
-  const maxVal = Math.max(lVal, rVal, 1);
-
   return (
     <div className="compare-overlay">
       <div className="compare-arena">
-        {/* Stat banner */}
+
+        {/* ── Stat banner ── */}
         <div className="compare-stat-banner">
           <span>{statMeta.icon}</span>
           <span>{statMeta.label}</span>
-          {isDraw && <span>— Draw!</span>}
+          {isDraw && <span style={{ color: 'var(--text-dim)', fontSize: '0.82em' }}>— Draw!</span>}
         </div>
 
-        {/* Cards + VS */}
+        {/* ── All player cards ── */}
         {stage >= 1 && (
-          <div className="compare-vs-row">
-            {/* Left */}
-            <div className={`compare-side ${winSide === 'left' ? 'win' : ''}`}>
-              {left && (
-                <PlayingCard
-                  card={left.card}
-                  size="md"
-                  faceUp={true}
-                  winningStat={winSide === 'left' ? decidingStat : null}
-                  losingStat={winSide === 'right' ? decidingStat : null}
-                />
-              )}
-              <div className={`compare-player-tag ${winSide === 'left' ? 'win' : ''}`}>
-                {left?.playerName}{left?.playerName === myName ? ' (you)' : ''}
-                {winSide === 'left' && !isDraw ? ' 🏆' : ''}
-              </div>
-            </div>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'flex-end',
+            gap: cards.length <= 2 ? 20 : 10,
+            flexWrap: 'wrap',
+            width: '100%',
+          }}>
+            {cards.map((c, i) => {
+              const isWinner = !isDraw && c.playerName === winner;
+              const isMe     = c.playerName === myName;
+              return (
+                <div
+                  key={c.playerName}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: 8,
+                    transform: isWinner ? 'translateY(-10px)' : 'none',
+                    transition: 'transform 0.5s cubic-bezier(0.34,1.36,0.64,1)',
+                    animation: `${POP_ANIMS[i % POP_ANIMS.length]} 0.5s cubic-bezier(0.34,1.36,0.64,1)`,
+                  }}
+                >
+                  {/* Crown above winner */}
+                  <div style={{
+                    height: 22,
+                    fontSize: 18,
+                    lineHeight: '22px',
+                    opacity: isWinner ? 1 : 0,
+                    transition: 'opacity 0.3s',
+                    animation: isWinner ? 'trophy-bob 1.4s ease-in-out infinite' : 'none',
+                  }}>
+                    ♛
+                  </div>
 
-            {/* VS */}
-            <div className="vs-mark">VS</div>
+                  <PlayingCard
+                    card={c.card}
+                    size={cardSize}
+                    faceUp={true}
+                    winningStat={isWinner ? decidingStat : null}
+                    losingStat={!isWinner && !isDraw ? decidingStat : null}
+                  />
 
-            {/* Right */}
-            <div className={`compare-side right ${winSide === 'right' ? 'win' : ''}`}>
-              {right && (
-                <PlayingCard
-                  card={right.card}
-                  size="md"
-                  faceUp={true}
-                  winningStat={winSide === 'right' ? decidingStat : null}
-                  losingStat={winSide === 'left' ? decidingStat : null}
-                />
-              )}
-              <div className={`compare-player-tag ${winSide === 'right' ? 'win' : ''}`}>
-                {right?.playerName}{right?.playerName === myName ? ' (you)' : ''}
-                {winSide === 'right' && !isDraw ? ' 🏆' : ''}
-              </div>
-            </div>
+                  {/* Player name tag */}
+                  <div style={{
+                    fontFamily: 'var(--font-display)',
+                    fontSize: 10,
+                    fontWeight: 700,
+                    letterSpacing: '0.18em',
+                    textTransform: 'uppercase',
+                    padding: '4px 12px',
+                    borderRadius: 999,
+                    background: isWinner
+                      ? 'linear-gradient(180deg, var(--gold-bright), var(--gold))'
+                      : 'var(--surface)',
+                    color: isWinner ? '#2a1450' : 'var(--text)',
+                    border: `1px solid ${isWinner ? 'var(--gold)' : 'var(--line)'}`,
+                    boxShadow: isWinner ? '0 0 18px var(--gold-dim)' : 'none',
+                  }}>
+                    {c.playerName}{isMe ? ' (you)' : ''}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
 
-        {/* Stat bars — only the deciding stat */}
+        {/* ── Per-player stat bars ── */}
         {stage >= 2 && (
-          <div className="compare-bars">
-            <div className={`compare-bar ${winSide === 'left' ? 'win-l' : ''} ${winSide === 'right' ? 'win-r' : ''}`}>
-              <div className="cv l">{lVal}</div>
-              <div className="track">
-                <div
-                  className="fill-l"
-                  style={{ width: stage >= 2 ? `${(lVal / maxVal) * 50}%` : '0%' }}
-                />
-                <div
-                  className="fill-r"
-                  style={{ width: stage >= 2 ? `${(rVal / maxVal) * 50}%` : '0%' }}
-                />
-              </div>
-              <div className="cv r">{rVal}</div>
-            </div>
+          <div style={{ width: '100%', maxWidth: 360, display: 'flex', flexDirection: 'column', gap: 9 }}>
+            {cards.map((c) => {
+              const val      = getStat(c.card, decidingStat);
+              const isWinner = !isDraw && c.playerName === winner;
+              const pct      = (val / maxVal) * 100;
+              return (
+                <div key={c.playerName} style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                  {/* Avatar initial */}
+                  <div style={{
+                    width: 26,
+                    height: 26,
+                    borderRadius: '50%',
+                    background: isWinner ? 'var(--gold)' : 'var(--surface-strong)',
+                    border: `1px solid ${isWinner ? 'var(--gold)' : 'var(--line)'}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: isWinner ? '#2a1450' : 'var(--text-dim)',
+                    flexShrink: 0,
+                  }}>
+                    {c.playerName[0].toUpperCase()}
+                  </div>
+
+                  {/* Fill bar */}
+                  <div style={{ flex: 1, height: 9, background: 'rgba(0,0,0,0.45)', borderRadius: 5, overflow: 'hidden', border: '1px solid var(--line)' }}>
+                    <div style={{
+                      height: '100%',
+                      width: `${pct}%`,
+                      borderRadius: 5,
+                      background: isWinner
+                        ? 'linear-gradient(90deg, var(--gold), var(--gold-bright))'
+                        : 'linear-gradient(90deg, var(--purple-bright), var(--purple-soft))',
+                      boxShadow: isWinner ? '0 0 10px rgba(240,199,80,0.6)' : '0 0 6px var(--purple-glow)',
+                      transition: 'width 0.85s cubic-bezier(0.4,0,0.2,1)',
+                    }} />
+                  </div>
+
+                  {/* Stat value */}
+                  <div style={{
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: 15,
+                    fontWeight: 700,
+                    width: 30,
+                    textAlign: 'right',
+                    flexShrink: 0,
+                    color: isWinner ? 'var(--gold)' : 'var(--text-soft)',
+                    textShadow: isWinner ? '0 0 12px rgba(240,199,80,0.55)' : 'none',
+                  }}>
+                    {val}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
 
-        {/* Next round button */}
+        {/* ── Winner text + Next Round ── */}
         {stage >= 3 && (
-          <button className="btn btn-gold" onClick={onClose} style={{ marginTop: 8 }}>
-            Next Round →
-          </button>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+            <p style={{
+              fontFamily: 'var(--font-display)',
+              fontSize: 12,
+              fontWeight: 700,
+              letterSpacing: '0.16em',
+              textTransform: 'uppercase',
+              color: isDraw ? 'var(--text-dim)' : 'var(--gold)',
+              textShadow: isDraw ? 'none' : '0 0 16px rgba(240,199,80,0.5)',
+              margin: 0,
+            }}>
+              {isDraw
+                ? 'Draw — no cards taken'
+                : winner === myName
+                  ? 'You win this round!'
+                  : `${winner} wins the round`}
+            </p>
+            <button className="btn btn-gold" onClick={onClose}>
+              Next Round →
+            </button>
+          </div>
         )}
+
       </div>
     </div>
   );
@@ -597,6 +671,9 @@ export default function GamePage() {
         @keyframes banner-drop { from { transform: translateY(-28px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         @keyframes pulse-dot { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(0.6); } }
         @keyframes note-in { from { transform: translateX(16px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes card-pop-l { from { transform: translateX(-50px) rotate(-8deg); opacity: 0; } to { transform: none; opacity: 1; } }
+        @keyframes card-pop-r { from { transform: translateX(50px) rotate(8deg); opacity: 0; } to { transform: none; opacity: 1; } }
+        @keyframes card-pop-up { from { transform: translateY(40px) scale(0.85); opacity: 0; } to { transform: none; opacity: 1; } }
       `}</style>
     </>
   );

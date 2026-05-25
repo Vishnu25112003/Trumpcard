@@ -335,14 +335,19 @@ const setupSocket = (io) => {
 
         const { winner, decidingStat, tieChain, isDraw } = resolveRound(topCards, stat);
 
-        // Remove top card from every active player
+        // Remove top card from every active player.
+        // On draw: card goes to the back of their own deck (no cards change hands).
+        // On win: card is removed; winner collects all top cards below.
         for (const p of gs.players) {
           if (p.isEliminated || !p.cards.length) continue;
-          p.cards.splice(0, 1);
+          const cardId = p.cards.splice(0, 1)[0];
+          if (isDraw) {
+            p.cards.push(cardId);
+          }
           p.cardCount = p.cards.length;
         }
 
-        // Give cards to winner
+        // Give all top cards to winner
         if (!isDraw && winner) {
           const wp = gs.players.find((p) => p.name === winner);
           if (wp) {

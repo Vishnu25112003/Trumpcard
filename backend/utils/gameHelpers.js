@@ -51,24 +51,16 @@ const redistributeCards = (eliminatedPlayer, activePlayers) => {
 
 // ─── game logic ───────────────────────────────────────────────────────────────
 
-// Compare topCards on initialStat; auto-break ties by cycling through STAT_ORDER.
+// Compare topCards on initialStat only. Tied values → immediate draw (no cycling).
 // topCards: [{ playerName, card: { stats: {...} } }]
 const resolveRound = (topCards, initialStat) => {
-  const startIdx = STAT_ORDER.indexOf(initialStat);
-  const tieChain = [];
+  const maxVal  = Math.max(...topCards.map((tc) => tc.card.stats[initialStat]));
+  const winners = topCards.filter((tc) => tc.card.stats[initialStat] === maxVal);
 
-  for (let i = 0; i < STAT_ORDER.length; i++) {
-    const stat    = STAT_ORDER[(startIdx + i) % STAT_ORDER.length];
-    const maxVal  = Math.max(...topCards.map((tc) => tc.card.stats[stat]));
-    const winners = topCards.filter((tc) => tc.card.stats[stat] === maxVal);
-
-    if (winners.length === 1) {
-      return { winner: winners[0].playerName, decidingStat: stat, tieChain, isDraw: false };
-    }
-    tieChain.push(stat);
+  if (winners.length === 1) {
+    return { winner: winners[0].playerName, decidingStat: initialStat, tieChain: [], isDraw: false };
   }
-
-  return { winner: null, decidingStat: initialStat, tieChain, isDraw: true };
+  return { winner: null, decidingStat: initialStat, tieChain: [], isDraw: true };
 };
 
 // Return the next non-eliminated player after currentPlayerName in turnOrder.

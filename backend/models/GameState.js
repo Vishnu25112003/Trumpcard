@@ -24,7 +24,9 @@ const gameStateSchema = new mongoose.Schema(
       enum: ['active', 'finished'],
       default: 'active',
     },
-    winner: { type: String, default: '' },
+    winner:         { type: String, default: '' },
+    matchDuration:  { type: Number, default: 0 },
+    matchStartedAt: { type: Date,   default: null },
   },
   { timestamps: true }
 );

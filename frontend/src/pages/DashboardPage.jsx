@@ -6,6 +6,14 @@ import SparkleLayer from '../components/SparkleLayer';
 
 const CARDS_PER_PLAYER_OPTIONS = { 2: [10, 13, 17, 20, 26], 3: [10, 13, 17], 4: [10, 13] };
 
+const MATCH_DURATION_OPTIONS = [
+  { label: 'No Limit', value: 0 },
+  { label: '5 min',    value: 300 },
+  { label: '10 min',   value: 600 },
+  { label: '15 min',   value: 900 },
+  { label: '20 min',   value: 1200 },
+];
+
 function TopBar({ playerName, onChangeName }) {
   return (
     <div className="top-bar">
@@ -35,6 +43,7 @@ export default function DashboardPage() {
   const [tab, setTab]                       = useState('create');
   const [totalPlayers, setTotalPlayers]     = useState(2);
   const [cardsPerPlayer, setCardsPerPlayer] = useState(10);
+  const [matchDuration, setMatchDuration]   = useState(0);
   const [creating, setCreating]             = useState(false);
   const [createError, setCreateError]       = useState('');
   const [roomCode, setRoomCode]             = useState('');
@@ -49,7 +58,7 @@ export default function DashboardPage() {
   const handleCreate = async () => {
     setCreating(true); setCreateError('');
     try {
-      const res  = await api.post('/rooms/create', { createdBy: playerName, totalPlayers, cardsPerPlayer });
+      const res  = await api.post('/rooms/create', { createdBy: playerName, totalPlayers, cardsPerPlayer, matchDuration });
       const room = res.data.data;
       setCurrentRoom(room);
       navigate(`/lobby/${room.roomCode}`);
@@ -141,6 +150,22 @@ export default function DashboardPage() {
               <p className="muted" style={{ marginTop: 6, fontSize: 11 }}>
                 {totalPlayers * cardsPerPlayer} / 52 cards used
               </p>
+            </div>
+
+            {/* Match Duration */}
+            <div>
+              <label className="field-label">Match Duration</label>
+              <div className="option-grid" style={{ gridTemplateColumns: `repeat(${MATCH_DURATION_OPTIONS.length}, 1fr)` }}>
+                {MATCH_DURATION_OPTIONS.map((opt) => (
+                  <button
+                    key={opt.value}
+                    className={`opt ${matchDuration === opt.value ? 'active' : ''}`}
+                    onClick={() => setMatchDuration(opt.value)}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {createError && (

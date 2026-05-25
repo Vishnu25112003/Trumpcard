@@ -133,7 +133,7 @@ export default function LobbyPage() {
         </div>
 
         {/* Mini stats */}
-        <div className="mini-stats" style={{ marginBottom: 12 }}>
+        <div className="mini-stats" style={{ marginBottom: 12, gridTemplateColumns: 'repeat(4, 1fr)' }}>
           <div className="mini-stat">
             <div className="v">{room?.totalPlayers}</div>
             <div className="l">Players</div>
@@ -145,6 +145,10 @@ export default function LobbyPage() {
           <div className="mini-stat">
             <div className="v">{room?.players.length}/{room?.totalPlayers}</div>
             <div className="l">Joined</div>
+          </div>
+          <div className="mini-stat">
+            <div className="v">{!room?.matchDuration ? '∞' : `${room.matchDuration / 60}m`}</div>
+            <div className="l">Duration</div>
           </div>
         </div>
 

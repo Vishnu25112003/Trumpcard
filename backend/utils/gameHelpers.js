@@ -98,6 +98,30 @@ const getNextActiveTurn = (gameState, currentPlayerName) => {
   return null; // everyone is eliminated
 };
 
+// Rank active players by their top card's total stat score (sum of all 6 stats).
+// topCardMap: Map<playerName, cardObject>
+// Returns [{ playerName, rank, score, card }] sorted by descending score; ties share a rank.
+const computeRankings = (players, topCardMap) => {
+  const scored = players
+    .filter((p) => !p.isEliminated)
+    .map((p) => {
+      const card  = topCardMap.get(p.name) || null;
+      const score = card
+        ? STAT_ORDER.reduce((sum, key) => sum + (card.stats?.[key] ?? 0), 0)
+        : 0;
+      return { playerName: p.name, score, card };
+    });
+
+  scored.sort((a, b) => b.score - a.score);
+
+  let rank = 1;
+  for (let i = 0; i < scored.length; i++) {
+    if (i > 0 && scored[i].score < scored[i - 1].score) rank = i + 1;
+    scored[i].rank = rank;
+  }
+  return scored;
+};
+
 module.exports = {
   STAT_ORDER,
   shuffleArray,
@@ -107,4 +131,5 @@ module.exports = {
   redistributeCards,
   resolveRound,
   getNextActiveTurn,
+  computeRankings,
 };

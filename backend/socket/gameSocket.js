@@ -8,13 +8,15 @@ const {
   redistributeCards,
   resolveRound,
   getNextActiveTurn,
+  computeRankings,
 } = require('../utils/gameHelpers');
 
 const NEXT_TURN_DELAY = 4000;  // ms to show round result before next turn
-const TURN_TIMEOUT    = 30000; // ms a player has to choose a stat
+const TURN_TIMEOUT    = 15000; // ms a player has to choose a stat
 
 // Per-room turn timers (in-memory — cleared on server restart)
-const turnTimers = new Map();
+const turnTimers  = new Map();
+const matchTimers = new Map();
 
 function publicPlayers(players) {
   return players.map((p) => ({
@@ -49,6 +51,60 @@ function startTurnTimer(io, roomCode, playerName) {
     TURN_TIMEOUT
   );
   turnTimers.set(roomCode, id);
+}
+
+// ─── match timer ──────────────────────────────────────────────────────────────
+
+function clearMatchTimer(roomCode) {
+  if (matchTimers.has(roomCode)) {
+    clearTimeout(matchTimers.get(roomCode));
+    matchTimers.delete(roomCode);
+  }
+}
+
+function startMatchTimer(io, roomCode, durationMs) {
+  clearMatchTimer(roomCode);
+  if (!durationMs || durationMs <= 0) return;
+  const id = setTimeout(() => handleMatchExpired(io, roomCode), durationMs);
+  matchTimers.set(roomCode, id);
+}
+
+async function handleMatchExpired(io, roomCode) {
+  try {
+    clearTurnTimer(roomCode); // disarm turn timer to prevent double-handling
+
+    const gs = await GameState.findOne({ roomCode });
+    if (!gs || gs.status !== 'active') return; // race: natural game-over already happened
+
+    // Mark finished immediately so any concurrent handler bails on its status check
+    gs.status = 'finished';
+    gs.markModified('status');
+    await gs.save();
+
+    // Collect top cards for all non-eliminated active players
+    const topCardMap = new Map();
+    for (const p of gs.players.filter((pl) => !pl.isEliminated && pl.cards.length)) {
+      const card = await Card.findById(p.cards[0]).lean();
+      if (card) topCardMap.set(p.name, card);
+    }
+
+    const rankings = computeRankings(gs.players, topCardMap);
+    const rank1    = rankings.filter((r) => r.rank === 1);
+    const winner   = rank1.length === 1 ? rank1[0].playerName : null;
+
+    gs.winner = winner || '';
+    await gs.save();
+
+    io.to(roomCode).emit('game_over', {
+      winner,
+      timeExpired: true,
+      rankings,
+    });
+
+    console.log(`[Socket] Match time expired in room ${roomCode} | winner: ${winner}`);
+  } catch (err) {
+    console.error('[Socket] handleMatchExpired error:', err.message);
+  }
 }
 
 // ─── disconnect / timeout handler ────────────────────────────────────────────
@@ -95,6 +151,7 @@ async function handleMissedTurn(io, roomCode, playerName, reason) {
         gs.winner  = gameWinner || '';
         gs.markModified('players');
         await gs.save();
+        clearMatchTimer(roomCode);
         io.to(roomCode).emit('game_over', { winner: gameWinner });
         return;
       }
@@ -167,12 +224,14 @@ const setupSocket = (io) => {
         }
 
         socket.emit('game_state_sync', {
-          currentPlayer: gs.currentTurn,
-          roundNumber:   gs.roundNumber,
-          players:       publicPlayers(gs.players),
-          status:        gs.status,
-          winner:        gs.winner,
-          turnTimeout:   TURN_TIMEOUT,
+          currentPlayer:  gs.currentTurn,
+          roundNumber:    gs.roundNumber,
+          players:        publicPlayers(gs.players),
+          status:         gs.status,
+          winner:         gs.winner,
+          turnTimeout:    TURN_TIMEOUT,
+          matchDuration:  gs.matchDuration,
+          matchStartedAt: gs.matchStartedAt ? gs.matchStartedAt.toISOString() : null,
         });
 
         if (gs.status === 'active' && gp && gp.cards.length) {
@@ -201,8 +260,8 @@ const setupSocket = (io) => {
           return;
         }
 
-        const hands      = distributeCards(allCards, room.totalPlayers, room.cardsPerPlayer);
-        const turnOrder  = shuffleArray(room.players.map((p) => p.name));
+        const hands       = distributeCards(allCards, room.totalPlayers, room.cardsPerPlayer);
+        const turnOrder   = shuffleArray(room.players.map((p) => p.name));
         const firstPlayer = turnOrder[0];
 
         const gsPlayers = room.players.map((p, i) => ({
@@ -214,14 +273,18 @@ const setupSocket = (io) => {
           isEliminated: false,
         }));
 
+        const matchStartedAt = new Date();
+
         await GameState.deleteOne({ roomCode });
         const gs = await GameState.create({
           roomCode,
-          players:     gsPlayers,
-          currentTurn: firstPlayer,
+          players:        gsPlayers,
+          currentTurn:    firstPlayer,
           turnOrder,
-          roundNumber: 1,
-          status:      'active',
+          roundNumber:    1,
+          status:         'active',
+          matchDuration:  room.matchDuration || 0,
+          matchStartedAt,
         });
 
         room.status = 'playing';
@@ -229,17 +292,20 @@ const setupSocket = (io) => {
 
         io.to(roomCode).emit('game_started', {
           gameState: {
-            currentPlayer: firstPlayer,
-            roundNumber:   1,
+            currentPlayer:  firstPlayer,
+            roundNumber:    1,
             turnOrder,
-            players:       publicPlayers(gsPlayers),
-            turnTimeout:   TURN_TIMEOUT,
+            players:        publicPlayers(gsPlayers),
+            turnTimeout:    TURN_TIMEOUT,
+            matchDuration:  room.matchDuration || 0,
+            matchStartedAt: matchStartedAt.toISOString(),
           },
           firstPlayer,
         });
 
         await dealTopCards(io, gs);
         startTurnTimer(io, roomCode, firstPlayer);
+        startMatchTimer(io, roomCode, (room.matchDuration || 0) * 1000);
 
         console.log(`[Socket] Game started in room ${roomCode} | first: ${firstPlayer}`);
       } catch (err) {
@@ -298,10 +364,10 @@ const setupSocket = (io) => {
         const stillActive = gs.players.filter((p) => !p.isEliminated);
         let gameOver = false, gameWinner = null;
         if (stillActive.length <= 1) {
-          gameWinner    = stillActive[0]?.name || null;
-          gs.status     = 'finished';
-          gs.winner     = gameWinner || '';
-          gameOver      = true;
+          gameWinner = stillActive[0]?.name || null;
+          gs.status  = 'finished';
+          gs.winner  = gameWinner || '';
+          gameOver   = true;
         }
 
         // Next player
@@ -344,6 +410,7 @@ const setupSocket = (io) => {
         });
 
         if (gameOver) {
+          clearMatchTimer(roomCode);
           io.to(roomCode).emit('game_over', { winner: gameWinner });
           return;
         }

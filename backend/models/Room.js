@@ -20,6 +20,7 @@ const roomSchema = new mongoose.Schema(
     createdBy:      { type: String, required: true, trim: true },
     totalPlayers:   { type: Number, required: true, enum: [2, 3, 4] },
     cardsPerPlayer: { type: Number, required: true, min: 1 },
+    matchDuration:  { type: Number, default: 0 },  // seconds; 0 = no limit
     players:        [playerSchema],
     status: {
       type: String,

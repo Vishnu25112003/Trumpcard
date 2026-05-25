@@ -7,10 +7,11 @@ import Particles from '../components/Particles';
 import SparkleLayer from '../components/SparkleLayer';
 import { STATS, getStat } from '../utils/gameData';
 
-const TURN_TIMEOUT_DEFAULT = 30;
+const TURN_TIMEOUT_DEFAULT = 15;
 
 // ── TopBar ────────────────────────────────────────────────────────────────────
-function TopBar({ round, code, isYourTurn, timer }) {
+function TopBar({ round, code, isYourTurn, timer, matchTimeLeft }) {
+  const fmtMatch = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
   return (
     <div className="top-bar">
       <div className="brand">
@@ -21,6 +22,11 @@ function TopBar({ round, code, isYourTurn, timer }) {
         </div>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        {matchTimeLeft != null && (
+          <div className="round-pill" style={{ color: matchTimeLeft <= 30 ? 'var(--red)' : 'var(--gold)' }}>
+            <span>&#x23F3;</span><span>{fmtMatch(matchTimeLeft)}</span>
+          </div>
+        )}
         {timer != null && <div className="round-pill"><span>&#x23F1;</span><span>{timer}s</span></div>}
         {isYourTurn != null && (
           <div className={`turn-pill ${isYourTurn ? '' : 'waiting'}`}>
@@ -33,7 +39,99 @@ function TopBar({ round, code, isYourTurn, timer }) {
 }
 
 // ── GameOver screen ────────────────────────────────────────────────────────────
-function GameOverScreen({ winner, playerName, navigate }) {
+const RANK_MEDALS = ['🥇', '🥈', '🥉'];
+
+function GameOverScreen({ winner, playerName, navigate, rankings, timeExpired }) {
+  // ── Time-expired path: rankings board ──────────────────────────────────────
+  if (timeExpired && rankings?.length) {
+    const myRanking = rankings.find((r) => r.playerName === playerName);
+    const myRank    = myRanking?.rank ?? null;
+
+    return (
+      <>
+        <div className="table-bg" />
+        <SparkleLayer />
+        {myRank === 1 && winner === playerName && <Particles active count={80} />}
+        <div className="center-screen">
+          <div style={{ fontSize: 52, lineHeight: 1 }}>&#x23F1;</div>
+          <h1 style={{
+            fontFamily: 'var(--font-brand)',
+            fontSize: 'clamp(28px, 5vw, 44px)',
+            margin: '12px 0 4px',
+            background: 'linear-gradient(180deg, var(--gold-bright) 0%, var(--gold) 50%, var(--gold-deep) 100%)',
+            WebkitBackgroundClip: 'text',
+            backgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+          }}>
+            Time&apos;s Up!
+          </h1>
+          <p style={{ color: 'var(--text-dim)', fontSize: 13, marginBottom: 20 }}>
+            {winner
+              ? <><span style={{ color: 'var(--gold)', fontWeight: 700 }}>{winner}</span> wins by card score!</>
+              : 'It\'s a tie at the top!'}
+          </p>
+
+          {/* Rankings list */}
+          <div style={{ width: '100%', maxWidth: 360, display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 24 }}>
+            {rankings.map((r) => {
+              const isMe   = r.playerName === playerName;
+              const medal  = RANK_MEDALS[r.rank - 1] || `#${r.rank}`;
+              return (
+                <div key={r.playerName} style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  padding: '10px 16px',
+                  borderRadius: 12,
+                  background: isMe ? 'rgba(108,63,190,0.18)' : 'var(--surface)',
+                  border: `1px solid ${r.rank === 1 ? 'rgba(240,199,80,0.4)' : isMe ? 'rgba(108,63,190,0.4)' : 'var(--line)'}`,
+                  boxShadow: r.rank === 1 ? '0 0 16px rgba(240,199,80,0.15)' : 'none',
+                }}>
+                  <div style={{ fontSize: 22, minWidth: 32, textAlign: 'center' }}>{medal}</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{
+                      fontFamily: 'var(--font-display)',
+                      fontSize: 13,
+                      fontWeight: 700,
+                      color: r.rank === 1 ? 'var(--gold)' : isMe ? 'var(--purple-soft)' : 'var(--text)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.1em',
+                    }}>
+                      {r.playerName}{isMe ? ' (you)' : ''}
+                    </div>
+                  </div>
+                  <div style={{
+                    fontFamily: 'var(--font-mono)',
+                    fontSize: 16,
+                    fontWeight: 700,
+                    color: r.rank === 1 ? 'var(--gold)' : 'var(--text-soft)',
+                    textShadow: r.rank === 1 ? '0 0 12px rgba(240,199,80,0.5)' : 'none',
+                  }}>
+                    {r.score}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, width: '100%', maxWidth: 320 }}>
+            <button
+              className={`btn ${myRank === 1 ? 'btn-gold' : 'btn-purple'}`}
+              style={{ width: '100%' }}
+              onClick={() => navigate('/dashboard')}
+            >
+              Play Again
+            </button>
+            <button className="btn btn-ghost" style={{ width: '100%' }} onClick={() => navigate('/')}>
+              Change Name
+            </button>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // ── Normal game-over path ──────────────────────────────────────────────────
   const didIWin = winner === playerName;
 
   return (
@@ -301,6 +399,10 @@ export default function GamePage() {
   const [roundResult, setRoundResult]     = useState(null);
   const [gameWinner, setGameWinner]       = useState(null);
   const [showParticles, setShowParticles] = useState(false);
+  const [matchTimeLeft, setMatchTimeLeft] = useState(null);
+  const [gameRankings, setGameRankings]   = useState(null);
+  const [timeExpired, setTimeExpired]     = useState(false);
+  const matchTimerRef                      = useRef(null);
 
   // ── notifications ─────────────────────────────────────────────────────────
   const [notifications, setNotifications] = useState([]);
@@ -340,7 +442,24 @@ export default function GamePage() {
     setTimeLeft(0);
   }, []);
 
-  useEffect(() => () => { stopTimer(); clearTimeout(bannerTimer.current); }, [stopTimer]);
+  const startMatchCountdown = useCallback((matchDurationSecs, matchStartedAtISO) => {
+    if (matchTimerRef.current) clearInterval(matchTimerRef.current);
+    if (!matchDurationSecs || matchDurationSecs <= 0) { setMatchTimeLeft(null); return; }
+    const tick = () => {
+      const elapsed   = Math.floor((Date.now() - new Date(matchStartedAtISO).getTime()) / 1000);
+      const remaining = Math.max(0, matchDurationSecs - elapsed);
+      setMatchTimeLeft(remaining);
+      if (remaining <= 0) { clearInterval(matchTimerRef.current); matchTimerRef.current = null; }
+    };
+    tick();
+    matchTimerRef.current = setInterval(tick, 1000);
+  }, []);
+
+  useEffect(() => () => {
+    stopTimer();
+    clearTimeout(bannerTimer.current);
+    if (matchTimerRef.current) clearInterval(matchTimerRef.current);
+  }, [stopTimer]);
 
   // ── bootstrap from navigation state (navigated here from lobby on game start) ─
   // LobbyPage passes gameState via navigate(..., { state: { gameState } }).
@@ -355,8 +474,11 @@ export default function GamePage() {
     const secs = Math.round((navGS.turnTimeout ?? TURN_TIMEOUT_DEFAULT * 1000) / 1000);
     setTurnDuration(secs);
     resetTimer(secs);
+    if (navGS.matchDuration && navGS.matchStartedAt) {
+      startMatchCountdown(navGS.matchDuration, navGS.matchStartedAt);
+    }
     setPhase('playing');
-  }, [resetTimer]); // resetTimer is stable; effect runs once on mount
+  }, [resetTimer, startMatchCountdown]); // both stable; effect runs once on mount
 
   // ── socket ────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -375,11 +497,20 @@ export default function GamePage() {
 
     const onSync = (data) => {
       applyState(data, true);
+      if (data.matchDuration && data.matchStartedAt) {
+        startMatchCountdown(data.matchDuration, data.matchStartedAt);
+      }
       if (data.status === 'finished') { setGameWinner(data.winner); setPhase('gameover'); }
       else setPhase('playing');
     };
 
-    const onStarted = ({ gameState }) => { applyState(gameState, true); setPhase('playing'); };
+    const onStarted = ({ gameState }) => {
+      applyState(gameState, true);
+      if (gameState.matchDuration && gameState.matchStartedAt) {
+        startMatchCountdown(gameState.matchDuration, gameState.matchStartedAt);
+      }
+      setPhase('playing');
+    };
 
     const onDeal = ({ card }) => {
       setMyCard(card);
@@ -421,7 +552,14 @@ export default function GamePage() {
       if (pl) setPlayers(pl);
       pushNote(`${pn} was eliminated`, 'error');
     };
-    const onOver = ({ winner }) => { setGameWinner(winner); setPhase('gameover'); stopTimer(); };
+    const onOver = ({ winner, timeExpired: te, rankings }) => {
+      setGameWinner(winner);
+      if (rankings) setGameRankings(rankings);
+      if (te) setTimeExpired(true);
+      setPhase('gameover');
+      stopTimer();
+      if (matchTimerRef.current) { clearInterval(matchTimerRef.current); matchTimerRef.current = null; }
+    };
     const onErr  = (msg) => pushNote(msg, 'error');
 
     socket.on('game_state_sync',   onSync);
@@ -444,7 +582,7 @@ export default function GamePage() {
       socket.off('player_eliminated', onEliminated);
       socket.off('game_over', onOver);       socket.off('error_message', onErr);
     };
-  }, [roomCode, playerName, navigate, pushNote, resetTimer, stopTimer, turnDuration]);
+  }, [roomCode, playerName, navigate, pushNote, resetTimer, stopTimer, startMatchCountdown, turnDuration]);
 
   // ── "Your Turn" banner ────────────────────────────────────────────────────
   useEffect(() => {
@@ -472,7 +610,7 @@ export default function GamePage() {
 
   // ── game over ────────────────────────────────────────────────────────────
   if (phase === 'gameover') {
-    return <GameOverScreen winner={gameWinner} playerName={playerName} navigate={navigate} />;
+    return <GameOverScreen winner={gameWinner} playerName={playerName} navigate={navigate} rankings={gameRankings} timeExpired={timeExpired} />;
   }
 
   // ── loading ───────────────────────────────────────────────────────────────
@@ -504,6 +642,7 @@ export default function GamePage() {
         code={roomCode}
         isYourTurn={phase === 'playing' && !iAmEliminated ? isMyTurn : null}
         timer={phase === 'playing' && !iAmEliminated ? timeLeft : null}
+        matchTimeLeft={matchTimeLeft}
       />
 
       {/* "Your Turn" toast — anchored below TopBar, never covers the card */}

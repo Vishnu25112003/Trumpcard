@@ -3,7 +3,7 @@ const { generateRoomCode } = require('../utils/gameHelpers');
 
 const createRoom = async (req, res) => {
   try {
-    const { createdBy, totalPlayers, cardsPerPlayer } = req.body;
+    const { createdBy, totalPlayers, cardsPerPlayer, matchDuration } = req.body;
 
     if (!createdBy || !totalPlayers || !cardsPerPlayer) {
       return res.status(400).json({
@@ -30,9 +30,10 @@ const createRoom = async (req, res) => {
 
     const room = await Room.create({
       roomCode,
-      createdBy: createdBy.trim(),
-      totalPlayers: Number(totalPlayers),
+      createdBy:      createdBy.trim(),
+      totalPlayers:   Number(totalPlayers),
       cardsPerPlayer: Number(cardsPerPlayer),
+      matchDuration:  Number(matchDuration ?? 0),
       players: [{ name: createdBy.trim(), socketId: '', isReady: false }],
       status: 'waiting',
     });

@@ -9,23 +9,17 @@ connectDB();
 
 const app = express();
 
-const ALLOWED_ORIGINS = [
-  ...(process.env.CLIENT_URL ? process.env.CLIENT_URL.split(',').map((u) => u.trim()) : []),
-  'http://localhost:5173',
-  'http://localhost:3000',
-];
+const corsOptions = {
+  origin: true,                  // reflect request origin — allows any domain, required for credentials
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+  optionsSuccessStatus: 200,     // some browsers choke on 204 for preflight
+};
 
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      // allow server-to-server / curl (no origin header)
-      if (!origin || ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
-      callback(new Error(`CORS: origin ${origin} not allowed`));
-    },
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    credentials: true,
-  })
-);
+// Handle OPTIONS preflight for every route BEFORE any other middleware
+app.options('*', cors(corsOptions));
+app.use(cors(corsOptions));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useGame } from '../context/GameContext';
 import { getSocket } from '../socket/socket';
 import PlayingCard, { CardBack, FanOfCards } from '../components/PlayingCard';
@@ -289,6 +289,7 @@ export default function GamePage() {
   const { roomCode } = useParams();
   const { playerName } = useGame();
   const navigate = useNavigate();
+  const location = useLocation();
 
   // ── game state ────────────────────────────────────────────────────────────
   const [phase, setPhase]                 = useState('loading');
@@ -312,6 +313,9 @@ export default function GamePage() {
   const [timeLeft, setTimeLeft]         = useState(TURN_TIMEOUT_DEFAULT);
   const [turnDuration, setTurnDuration] = useState(TURN_TIMEOUT_DEFAULT);
   const timerRef                        = useRef(null);
+
+  // ── guard against rapid double-tap selecting two different stats ──────────
+  const statChosenRef = useRef(false);
 
   const isMyTurn      = currentPlayer === playerName;
   const iAmEliminated = players.find((p) => p.name === playerName)?.isEliminated || false;
@@ -338,12 +342,27 @@ export default function GamePage() {
 
   useEffect(() => () => { stopTimer(); clearTimeout(bannerTimer.current); }, [stopTimer]);
 
+  // ── bootstrap from navigation state (navigated here from lobby on game start) ─
+  // LobbyPage passes gameState via navigate(..., { state: { gameState } }).
+  // Read it once on mount so the game shows instantly without waiting for
+  // the rejoin_game → game_state_sync round-trip.
+  useEffect(() => {
+    const navGS = location.state?.gameState;
+    if (!navGS) return;
+    setCurrentPlayer(navGS.currentPlayer ?? '');
+    setRoundNumber(navGS.roundNumber ?? 1);
+    setPlayers(navGS.players ?? []);
+    const secs = Math.round((navGS.turnTimeout ?? TURN_TIMEOUT_DEFAULT * 1000) / 1000);
+    setTurnDuration(secs);
+    resetTimer(secs);
+    setPhase('playing');
+  }, [resetTimer]); // resetTimer is stable; effect runs once on mount
+
   // ── socket ────────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!playerName) { navigate('/'); return; }
     const socket = getSocket();
     if (!socket.connected) socket.connect();
-    socket.emit('rejoin_game', { roomCode, playerName });
 
     const applyState = (data, resetT) => {
       setCurrentPlayer(data.currentPlayer);
@@ -364,6 +383,7 @@ export default function GamePage() {
 
     const onDeal = ({ card }) => {
       setMyCard(card);
+      statChosenRef.current = false;
       setSelectedStat(null);
     };
 
@@ -372,6 +392,7 @@ export default function GamePage() {
       setRoundNumber(rn);
       setPlayers(pl);
       setRoundResult(null);
+      statChosenRef.current = false;
       setSelectedStat(null);
       setPhase('playing');
       resetTimer(turnDuration);
@@ -413,6 +434,9 @@ export default function GamePage() {
     socket.on('game_over',         onOver);
     socket.on('error_message',     onErr);
 
+    // Emit AFTER listeners are registered so no response event is missed
+    socket.emit('rejoin_game', { roomCode, playerName });
+
     return () => {
       socket.off('game_state_sync', onSync); socket.off('game_started', onStarted);
       socket.off('deal_card', onDeal);       socket.off('turn_started', onTurnStarted);
@@ -433,12 +457,13 @@ export default function GamePage() {
 
   // ── actions ───────────────────────────────────────────────────────────────
   const handleChooseStat = useCallback((stat) => {
-    if (!isMyTurn || phase !== 'playing' || iAmEliminated || selectedStat) return;
+    if (!isMyTurn || phase !== 'playing' || iAmEliminated || statChosenRef.current) return;
+    statChosenRef.current = true;
     setSelectedStat(stat);
     stopTimer();
     setShowBanner(false);
     getSocket().emit('choose_stat', { roomCode, stat, playerName });
-  }, [isMyTurn, phase, iAmEliminated, selectedStat, roomCode, playerName, stopTimer]);
+  }, [isMyTurn, phase, iAmEliminated, roomCode, playerName, stopTimer]);
 
   const handleResultClose = useCallback(() => { setRoundResult(null); }, []);
 

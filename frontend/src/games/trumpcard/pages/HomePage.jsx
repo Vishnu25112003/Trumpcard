@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useGame } from '../context/GameContext';
-import SparkleLayer from '../components/SparkleLayer';
+import { useGame } from '../../../shared/context/GameContext';
+import SparkleLayer from '../../../shared/components/SparkleLayer';
 import PlayingCard from '../components/PlayingCard';
 import { STATS } from '../utils/gameData';
 
@@ -19,7 +19,7 @@ export default function HomePage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (playerName) { navigate('/dashboard', { replace: true }); return; }
+    if (playerName) { navigate('/trumpcard/dashboard', { replace: true }); return; }
     const t = setTimeout(() => setReady(true), 50);
     return () => clearTimeout(t);
   }, [playerName, navigate]);
@@ -31,7 +31,7 @@ export default function HomePage() {
     if (name.length < 2) { setError('Name must be at least 2 characters'); return; }
     if (name.length > 20){ setError('Name too long (max 20 characters)'); return; }
     saveName(name);
-    navigate('/dashboard');
+    navigate('/trumpcard/dashboard');
   };
 
   return (

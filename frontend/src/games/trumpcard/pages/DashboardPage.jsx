@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useGame } from '../context/GameContext';
-import api from '../utils/api';
-import SparkleLayer from '../components/SparkleLayer';
+import { useGame } from '../../../shared/context/GameContext';
+import api from '../../../shared/utils/api';
+import SparkleLayer from '../../../shared/components/SparkleLayer';
 
 const CARDS_PER_PLAYER_OPTIONS = { 2: [10, 13, 17, 20, 26], 3: [10, 13, 17], 4: [10, 13] };
 
@@ -61,7 +61,7 @@ export default function DashboardPage() {
       const res  = await api.post('/rooms/create', { createdBy: playerName, totalPlayers, cardsPerPlayer, matchDuration });
       const room = res.data.data;
       setCurrentRoom(room);
-      navigate(`/lobby/${room.roomCode}`);
+      navigate(`/trumpcard/lobby/${room.roomCode}`);
     } catch (err) {
       setCreateError(err.response?.data?.error || 'Failed to create room');
     } finally { setCreating(false); }
@@ -75,7 +75,7 @@ export default function DashboardPage() {
       const res  = await api.post('/rooms/join', { roomCode: code, playerName });
       const room = res.data.data;
       setCurrentRoom(room);
-      navigate(`/lobby/${room.roomCode}`);
+      navigate(`/trumpcard/lobby/${room.roomCode}`);
     } catch (err) {
       setJoinError(err.response?.data?.error || 'Failed to join room');
     } finally { setJoining(false); }

@@ -1,10 +1,10 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { useGame } from '../context/GameContext';
-import { getSocket } from '../socket/socket';
+import { useGame } from '../../../shared/context/GameContext';
+import { getSocket } from '../../../shared/socket/socket';
 import PlayingCard, { CardBack, FanOfCards } from '../components/PlayingCard';
-import Particles from '../components/Particles';
-import SparkleLayer from '../components/SparkleLayer';
+import Particles from '../../../shared/components/Particles';
+import SparkleLayer from '../../../shared/components/SparkleLayer';
 import { STATS, getStat } from '../utils/gameData';
 
 const TURN_TIMEOUT_DEFAULT = 15;
@@ -118,7 +118,7 @@ function GameOverScreen({ winner, playerName, navigate, rankings, timeExpired })
             <button
               className={`btn ${myRank === 1 ? 'btn-gold' : 'btn-purple'}`}
               style={{ width: '100%' }}
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate('/trumpcard/dashboard')}
             >
               Play Again
             </button>
@@ -168,7 +168,7 @@ function GameOverScreen({ winner, playerName, navigate, rankings, timeExpired })
           <button
             className={`btn ${didIWin ? 'btn-gold' : 'btn-purple'}`}
             style={{ width: '100%' }}
-            onClick={() => navigate('/dashboard')}
+            onClick={() => navigate('/trumpcard/dashboard')}
           >
             Play Again
           </button>
@@ -482,7 +482,7 @@ export default function GamePage() {
 
   // ── socket ────────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!playerName) { navigate('/'); return; }
+    if (!playerName) { navigate('/trumpcard'); return; }
     const socket = getSocket();
     if (!socket.connected) socket.connect();
 

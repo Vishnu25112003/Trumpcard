@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import api from '../utils/api';
+import api from '../../../shared/utils/api';
 
 const STAT_KEYS = ['power', 'speed', 'intelligence', 'strength', 'defense', 'popularity'];
 const STAT_COLORS = {

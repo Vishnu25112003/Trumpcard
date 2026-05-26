@@ -1,9 +1,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useGame } from '../context/GameContext';
-import { getSocket } from '../socket/socket';
-import api from '../utils/api';
-import SparkleLayer from '../components/SparkleLayer';
+import { useGame } from '../../../shared/context/GameContext';
+import { getSocket } from '../../../shared/socket/socket';
+import api from '../../../shared/utils/api';
+import SparkleLayer from '../../../shared/components/SparkleLayer';
 
 const AVATAR_CLASSES = ['', 'p2', 'p3', 'p4'];
 
@@ -42,7 +42,7 @@ export default function LobbyPage() {
       setRoom(room);
       setCurrentRoom(room);
       if (room.status !== 'waiting') {
-        navigate(`/game/${roomCode}`, { replace: true });
+        navigate(`/trumpcard/game/${roomCode}`, { replace: true });
       }
     } catch {
       setError('Room not found');
@@ -52,7 +52,7 @@ export default function LobbyPage() {
   }, [roomCode, setCurrentRoom, navigate]);
 
   useEffect(() => {
-    if (!playerName) { navigate('/'); return; }
+    if (!playerName) { navigate('/trumpcard'); return; }
     fetchRoom();
 
     const socket = getSocket();
@@ -61,13 +61,13 @@ export default function LobbyPage() {
 
     socket.on('room_updated', (data) => {
       if (data.status === 'playing') {
-        navigate(`/game/${roomCode}`, { replace: true });
+        navigate(`/trumpcard/game/${roomCode}`, { replace: true });
         return;
       }
       setRoom((prev) => prev ? { ...prev, players: data.players, status: data.status } : prev);
     });
     socket.on('game_started', (data) => {
-      navigate(`/game/${roomCode}`, { state: { gameState: data.gameState } });
+      navigate(`/trumpcard/game/${roomCode}`, { state: { gameState: data.gameState } });
     });
     socket.on('error_message', (msg) => setError(msg));
 
@@ -109,7 +109,7 @@ export default function LobbyPage() {
         <div className="table-bg" />
         <div className="center-screen">
           <p style={{ color: 'var(--red)', marginBottom: 12 }}>{error}</p>
-          <button className="btn btn-ghost" onClick={() => navigate('/dashboard')}>← Back</button>
+          <button className="btn btn-ghost" onClick={() => navigate('/trumpcard/dashboard')}>← Back</button>
         </div>
       </>
     );
@@ -208,7 +208,7 @@ export default function LobbyPage() {
         <button
           className="btn btn-ghost btn-sm"
           style={{ marginTop: 12 }}
-          onClick={() => { getSocket().disconnect(); navigate('/dashboard'); }}
+          onClick={() => { getSocket().disconnect(); navigate('/trumpcard/dashboard'); }}
         >
           Leave Lobby
         </button>

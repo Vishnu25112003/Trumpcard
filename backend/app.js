@@ -1,9 +1,8 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
-const connectDB = require('./config/db');
-const cardRoutes = require('./routes/cardRoutes');
-const roomRoutes = require('./routes/roomRoutes');
+const connectDB = require('./shared/config/db');
+const { registerRoutes: registerTrumpcardRoutes } = require('./games/trumpcard');
 
 connectDB();
 
@@ -24,8 +23,7 @@ app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use('/api/cards', cardRoutes);
-app.use('/api/rooms', roomRoutes);
+registerTrumpcardRoutes(app);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'Trumpcard API is running', timestamp: new Date() });

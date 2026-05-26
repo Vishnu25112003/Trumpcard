@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const upload = require('../middleware/upload');
+const upload = require('../../../shared/middleware/upload');
 const {
   getAllCards,
   getCardById,

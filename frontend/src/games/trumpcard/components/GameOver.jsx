@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useGame } from '../context/GameContext';
+import { useGame } from '../../../shared/context/GameContext';
 
 const CONFETTI_COLORS = ['#7c3aed', '#f59e0b', '#10b981', '#ef4444', '#3b82f6', '#ec4899'];
 const CONFETTI_SHAPES = ['●', '■', '▲', '★', '♦'];

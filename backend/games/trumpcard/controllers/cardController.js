@@ -1,5 +1,5 @@
 const Card = require('../models/Card');
-const cloudinary = require('../config/cloudinary');
+const cloudinary = require('../../../shared/config/cloudinary');
 
 const MAX_CARDS = 52;
 

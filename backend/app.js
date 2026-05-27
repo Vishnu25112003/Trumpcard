@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const connectDB = require('./shared/config/db');
 const { registerRoutes: registerTrumpcardRoutes } = require('./games/trumpcard');
+const { registerRoutes: registerHCRoutes }        = require('./games/handcricket');
 
 connectDB();
 
@@ -24,6 +25,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 registerTrumpcardRoutes(app);
+registerHCRoutes(app);
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'Trumpcard API is running', timestamp: new Date() });

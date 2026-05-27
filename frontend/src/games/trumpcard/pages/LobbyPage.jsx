@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useGame } from '../../../shared/context/GameContext';
+import { useTrumpcard } from '../context/TrumpcardContext';
 import { getSocket } from '../../../shared/socket/socket';
 import api from '../../../shared/utils/api';
 import SparkleLayer from '../../../shared/components/SparkleLayer';
@@ -23,7 +24,8 @@ function TopBar() {
 
 export default function LobbyPage() {
   const { roomCode } = useParams();
-  const { playerName, setCurrentRoom } = useGame();
+  const { playerName } = useGame();
+  const { setCurrentRoom } = useTrumpcard();
   const navigate = useNavigate();
 
   const [room, setRoom]         = useState(null);

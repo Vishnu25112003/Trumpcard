@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useGame } from '../../../shared/context/GameContext';
+import { useTrumpcard } from '../context/TrumpcardContext';
 import api from '../../../shared/utils/api';
 import SparkleLayer from '../../../shared/components/SparkleLayer';
 
@@ -37,7 +38,8 @@ function TopBar({ playerName, onChangeName }) {
 }
 
 export default function DashboardPage() {
-  const { playerName, clearName, setCurrentRoom } = useGame();
+  const { playerName, clearName } = useGame();
+  const { setCurrentRoom } = useTrumpcard();
   const navigate = useNavigate();
 
   const [tab, setTab]                       = useState('create');

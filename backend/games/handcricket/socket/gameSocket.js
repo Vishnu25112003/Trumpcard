@@ -154,6 +154,7 @@ async function handleInningsEnd(io, roomCode) {
   const gs = await HCGameState.findOne({ roomCode });
   if (!gs) return;
 
+
   const summary = {
     innings:     gs.currentInnings,
     battingRole: gs.battingRole,

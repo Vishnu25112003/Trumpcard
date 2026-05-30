@@ -17,9 +17,9 @@ async function createRoom(req, res) {
       roomCode,
       hostName: playerName.trim(),
       settings: {
-        mode:    settings.mode    || 'overBased',
-        overs:   settings.overs   || 5,
-        wickets: settings.wickets || 3,
+        wicketType: settings.wicketType === 'custom' ? 'custom' : 'single',
+        wickets:    settings.wicketType === 'custom' ? (Number(settings.wickets) || 3) : 1,
+        overs:      Number(settings.overs) || 5,
       },
       expiresAt: new Date(Date.now() + 10 * 60 * 1000),
     });

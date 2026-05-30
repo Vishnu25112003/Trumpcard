@@ -14,8 +14,9 @@ function resolveBall(batsmanPick, bowlerPick) {
 
 function checkInningsEnd(gs) {
   const batsman = gs.scores[gs.battingRole];
-  if (gs.settings.mode === 'overBased') return batsman.balls >= gs.settings.overs * 6;
-  return batsman.wickets >= gs.settings.wickets;
+  const oversOut   = batsman.balls >= gs.settings.overs * 6;
+  const wicketsOut = batsman.wickets >= gs.settings.wickets;
+  return oversOut || wicketsOut;
 }
 
 function checkSuperOverEnd(batsman) {

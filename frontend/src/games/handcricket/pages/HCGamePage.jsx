@@ -248,7 +248,9 @@ export default function HCGamePage() {
   // ── Render ──────────────────────────────────────────────────────────────────
   const isEnded    = uiPhase === 'ended';
   const iWon       = winner === myRole;
-  const modeLabel  = settings.mode === 'wicketBased' ? `${settings.wickets}W` : `${settings.overs} Overs`;
+  const modeLabel = settings.overs
+    ? `${settings.overs}Ov · ${settings.wickets ?? 1}W`
+    : 'Cricket';
 
   return (
     <>

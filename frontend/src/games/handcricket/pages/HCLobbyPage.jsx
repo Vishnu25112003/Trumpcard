@@ -84,12 +84,12 @@ export default function HCLobbyPage() {
         {/* Game settings summary */}
         <div className="mini-stats">
           <div className="mini-stat">
-            <div className="v">{s.mode === 'wicketBased' ? s.wickets : s.overs}</div>
-            <div className="l">{s.mode === 'wicketBased' ? 'Wickets' : 'Overs'}</div>
+            <div className="v">{s.overs ?? '—'}</div>
+            <div className="l">Overs</div>
           </div>
           <div className="mini-stat">
-            <div className="v">1v1</div>
-            <div className="l">Format</div>
+            <div className="v">{s.wickets ?? '—'}</div>
+            <div className="l">Wickets</div>
           </div>
           <div className="mini-stat">
             <div className="v">7s</div>

@@ -9,9 +9,9 @@ const hcRoomSchema = new mongoose.Schema(
     guestName:     { type: String, default: null },
     status:        { type: String, enum: ['waiting', 'active', 'completed', 'abandoned'], default: 'waiting' },
     settings: {
-      mode:    { type: String, enum: ['overBased', 'wicketBased'], default: 'overBased' },
-      overs:   { type: Number, default: 5 },
-      wickets: { type: Number, default: 3 },
+      wicketType: { type: String, enum: ['single', 'custom'], default: 'single' },
+      wickets:    { type: Number, default: 1 },
+      overs:      { type: Number, default: 5 },
     },
     expiresAt: { type: Date },
   },

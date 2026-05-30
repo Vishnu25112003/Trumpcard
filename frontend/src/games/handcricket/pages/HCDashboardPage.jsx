@@ -5,8 +5,8 @@ import { useHC } from '../context/HCContext';
 import api from '../../../shared/utils/api';
 import SparkleLayer from '../../../shared/components/SparkleLayer';
 
-const OVERS_OPTIONS   = [2, 3, 5, 7, 10];
-const WICKETS_OPTIONS = [1, 2, 3, 5];
+const OVERS_OPTIONS   = [1, 2, 3, 5, 7, 10];
+const WICKETS_OPTIONS = [2, 3, 5, 10];
 
 function TopBar({ playerName, onBack }) {
   return (
@@ -22,9 +22,7 @@ function TopBar({ playerName, onBack }) {
         <span style={{ color: 'var(--text-dim)', fontSize: 12 }}>
           Playing as <span style={{ color: 'var(--gold)', fontWeight: 600 }}>{playerName}</span>
         </span>
-        <button className="btn btn-ghost btn-sm" onClick={() => { /* change name handled in HomePage */ onBack(); }}>
-          Change
-        </button>
+        <button className="btn btn-ghost btn-sm" onClick={onBack}>Change</button>
       </div>
     </div>
   );
@@ -35,15 +33,15 @@ export default function HCDashboardPage() {
   const { initRoom } = useHC();
   const navigate = useNavigate();
 
-  const [tab,     setTab]     = useState('create');
-  const [mode,    setMode]    = useState('overBased');
-  const [overs,   setOvers]   = useState(5);
-  const [wickets, setWickets] = useState(3);
-  const [creating, setCreating] = useState(false);
-  const [createErr, setCreateErr] = useState('');
-  const [code,    setCode]    = useState('');
-  const [joining, setJoining] = useState(false);
-  const [joinErr, setJoinErr] = useState('');
+  const [tab,        setTab]        = useState('create');
+  const [wicketType, setWicketType] = useState('single');   // 'single' | 'custom'
+  const [wickets,    setWickets]    = useState(3);
+  const [overs,      setOvers]      = useState(5);
+  const [creating,   setCreating]   = useState(false);
+  const [createErr,  setCreateErr]  = useState('');
+  const [code,       setCode]       = useState('');
+  const [joining,    setJoining]    = useState(false);
+  const [joinErr,    setJoinErr]    = useState('');
 
   const handleChangeName = () => { clearName(); navigate('/hand-cricket'); };
 
@@ -52,7 +50,11 @@ export default function HCDashboardPage() {
     try {
       const { data } = await api.post('/hc/rooms/create', {
         playerName,
-        settings: { mode, overs, wickets },
+        settings: {
+          wicketType,
+          wickets: wicketType === 'custom' ? wickets : 1,
+          overs,
+        },
       });
       if (!data.success) { setCreateErr(data.error || 'Failed to create room'); return; }
       initRoom({ role: 'host', roomCode: data.roomCode, settings: data.settings });
@@ -101,36 +103,37 @@ export default function HCDashboardPage() {
 
           {tab === 'create' && (
             <div className="stack">
-              {/* Mode */}
+
+              {/* Step 1 — Wicket type */}
               <div>
-                <label className="field-label">Game Mode</label>
-                <div className="option-grid cols-3" style={{ gridTemplateColumns: '1fr 1fr' }}>
-                  {[
-                    { value: 'overBased',   label: 'Over-Based' },
-                    { value: 'wicketBased', label: 'Wicket-Based' },
-                  ].map(m => (
-                    <button key={m.value} className={`opt${mode === m.value ? ' active' : ''}`} onClick={() => setMode(m.value)}>
-                      {m.label}
-                    </button>
-                  ))}
+                <label className="field-label">Wicket Type</label>
+                <div className="option-grid" style={{ gridTemplateColumns: '1fr 1fr' }}>
+                  <button
+                    className={`opt${wicketType === 'single' ? ' active' : ''}`}
+                    onClick={() => setWicketType('single')}
+                  >
+                    <span style={{ fontSize: 16 }}>🎯</span>
+                    <span>Single Wicket</span>
+                  </button>
+                  <button
+                    className={`opt${wicketType === 'custom' ? ' active' : ''}`}
+                    onClick={() => setWicketType('custom')}
+                  >
+                    <span style={{ fontSize: 16 }}>⚙️</span>
+                    <span>Custom Wickets</span>
+                  </button>
                 </div>
+                <p style={{ fontSize: 11, color: 'var(--text-dim)', marginTop: 6, letterSpacing: '0.04em' }}>
+                  {wicketType === 'single'
+                    ? '1 wicket per innings — out on any match'
+                    : 'Choose how many wickets each team gets'}
+                </p>
               </div>
 
-              {/* Overs or Wickets */}
-              {mode === 'overBased' ? (
+              {/* Step 2 — Wicket count (custom only) */}
+              {wicketType === 'custom' && (
                 <div>
-                  <label className="field-label">Overs</label>
-                  <div className="option-grid cols-4" style={{ gridTemplateColumns: `repeat(${OVERS_OPTIONS.length}, 1fr)` }}>
-                    {OVERS_OPTIONS.map(o => (
-                      <button key={o} className={`opt${overs === o ? ' active' : ''}`} onClick={() => setOvers(o)}>
-                        {o}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div>
-                  <label className="field-label">Wickets</label>
+                  <label className="field-label">Wickets per Innings</label>
                   <div className="option-grid" style={{ gridTemplateColumns: `repeat(${WICKETS_OPTIONS.length}, 1fr)` }}>
                     {WICKETS_OPTIONS.map(w => (
                       <button key={w} className={`opt${wickets === w ? ' active' : ''}`} onClick={() => setWickets(w)}>
@@ -140,6 +143,32 @@ export default function HCDashboardPage() {
                   </div>
                 </div>
               )}
+
+              {/* Step 3 — Overs (always shown) */}
+              <div>
+                <label className="field-label">Overs per Innings</label>
+                <div className="option-grid" style={{ gridTemplateColumns: `repeat(${OVERS_OPTIONS.length}, 1fr)` }}>
+                  {OVERS_OPTIONS.map(o => (
+                    <button key={o} className={`opt${overs === o ? ' active' : ''}`} onClick={() => setOvers(o)}>
+                      {o}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Summary chip */}
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                padding: '8px 16px', borderRadius: 99,
+                background: 'rgba(94,236,255,0.08)', border: '1px solid rgba(94,236,255,0.2)',
+                fontSize: 12, color: 'var(--cyan)', fontFamily: 'var(--font-mono)',
+              }}>
+                <span>🏏</span>
+                <span>
+                  {overs} Over{overs > 1 ? 's' : ''} ·{' '}
+                  {wicketType === 'single' ? '1 Wicket' : `${wickets} Wickets`} per innings
+                </span>
+              </div>
 
               {createErr && <p style={{ color: 'var(--red)', fontSize: 12 }}>{createErr}</p>}
 
@@ -171,6 +200,16 @@ export default function HCDashboardPage() {
           )}
         </div>
       </div>
+
+      <style>{`
+        .opt {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 4px;
+          font-size: 12px;
+        }
+      `}</style>
     </>
   );
 }

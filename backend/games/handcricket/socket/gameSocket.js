@@ -279,16 +279,21 @@ async function endMatch(io, roomCode, gs, winner, reason) {
 
 async function startToss(io, roomCode) {
   await new Promise(r => setTimeout(r, 500));
-  const winner = Math.random() < 0.5 ? 'host' : 'guest';
+  const caller = Math.random() < 0.5 ? 'host' : 'guest';
   const gs = await HCGameState.findOne({ roomCode });
   if (!gs) return;
-  gs.toss = { winner, choice: null };
+  gs.phase = 'toss';
+  gs.toss = { caller, call: null, result: null, winner: null, choice: null };
+  gs.battingRole = null;
+  gs.bowlingRole = null;
+  gs.currentInnings = 1;
+  gs.breakReadyCount = 0;
+  gs.currentBall = { hostPick: null, guestPick: null, deadline: null, ballNumber: 0 };
+  gs.markModified('toss');
+  gs.markModified('currentBall');
   await gs.save();
 
-  io.to(roomCode).emit('hc:toss:start', {});
-  setTimeout(() => {
-    io.to(roomCode).emit('hc:toss:result', { winner });
-  }, 2200);
+  io.to(roomCode).emit('hc:toss:start', { caller });
 }
 
 // ─── main socket setup ────────────────────────────────────────────────────────
@@ -368,14 +373,15 @@ const setupSocket = (io) => {
         const room = await HCRoom.findOne({ roomCode: roomCode?.toUpperCase() });
         if (!room) { socket.emit('hc:error', 'Room not found'); return; }
 
-        socket.join(roomCode);
+        const rc = roomCode?.toUpperCase();
+        socket.join(rc);
 
         const isHost = room.hostName === playerName;
         if (isHost) room.hostSocketId = socket.id;
         else         room.guestSocketId = socket.id;
         await room.save();
 
-        const gs = await HCGameState.findOne({ roomCode });
+        const gs = await HCGameState.findOne({ roomCode: rc });
         if (gs) {
           socket.emit('hc:state:sync', {
             phase:       gs.phase,
@@ -390,6 +396,8 @@ const setupSocket = (io) => {
             hostName:    room.hostName,
             guestName:   room.guestName,
             inningsSummaries: gs.inningsSummaries,
+            currentInnings: gs.currentInnings,
+            currentBall: gs.currentBall,
           });
         }
       } catch (err) {
@@ -397,11 +405,51 @@ const setupSocket = (io) => {
       }
     });
 
-    // ── hc:toss:choose ───────────────────────────────────────────────────────
-    socket.on('hc:toss:choose', async ({ roomCode, choice }) => {
+    // ── hc:toss:call ─────────────────────────────────────────────────────────
+    socket.on('hc:toss:call', async ({ roomCode, role, call }) => {
       try {
-        const gs = await HCGameState.findOne({ roomCode });
+        const rc = roomCode?.toUpperCase();
+        if (!['host', 'guest'].includes(role) || !['heads', 'tails'].includes(call)) {
+          socket.emit('hc:error', 'Invalid toss call');
+          return;
+        }
+
+        const gs = await HCGameState.findOne({ roomCode: rc });
         if (!gs || gs.phase !== 'toss') return;
+        if (gs.toss?.caller !== role || gs.toss?.call) return;
+
+        const result = Math.random() < 0.5 ? 'heads' : 'tails';
+        const winner = result === call ? role : getOpponent(role);
+
+        gs.toss.call = call;
+        gs.toss.result = result;
+        gs.toss.winner = winner;
+        gs.markModified('toss');
+        await gs.save();
+
+        io.to(rc).emit('hc:toss:result', {
+          caller: gs.toss.caller,
+          call,
+          result,
+          winner,
+        });
+      } catch (err) {
+        console.error('[HC] hc:toss:call error:', err.message);
+      }
+    });
+
+    // ── hc:toss:choose ───────────────────────────────────────────────────────
+    socket.on('hc:toss:choose', async ({ roomCode, role, choice }) => {
+      try {
+        const rc = roomCode?.toUpperCase();
+        if (!['bat', 'bowl'].includes(choice)) {
+          socket.emit('hc:error', 'Invalid toss choice');
+          return;
+        }
+
+        const gs = await HCGameState.findOne({ roomCode: rc });
+        if (!gs || gs.phase !== 'toss') return;
+        if (!gs.toss?.winner || gs.toss.winner !== role || gs.toss.choice) return;
 
         gs.toss.choice  = choice;
         gs.battingRole  = choice === 'bat' ? gs.toss.winner : getOpponent(gs.toss.winner);
@@ -412,14 +460,14 @@ const setupSocket = (io) => {
         gs.markModified('toss');
         await gs.save();
 
-        io.to(roomCode).emit('hc:innings:start', {
+        io.to(rc).emit('hc:innings:start', {
           innings:     1,
           battingRole: gs.battingRole,
           bowlingRole: gs.bowlingRole,
           settings:    gs.settings,
         });
 
-        setTimeout(() => startNextBall(io, roomCode), 2000);
+        setTimeout(() => startNextBall(io, rc), 2000);
       } catch (err) {
         console.error('[HC] hc:toss:choose error:', err.message);
       }

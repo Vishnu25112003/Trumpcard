@@ -27,7 +27,14 @@ function CoinFace({ side }) {
   );
 }
 
-export default function Coin({ winnerName = 'You', isChooser = true, onChoose, forcedFace }) {
+export default function Coin({
+  winnerName = 'You',
+  isChooser = true,
+  onChoose,
+  forcedFace,
+  autoLaunchKey,
+  interactive = true,
+}) {
   const [phase, setPhase] = useState('ready');
   const [face, setFace]   = useState('heads');
   const [dragging, setDragging] = useState(false);
@@ -45,14 +52,16 @@ export default function Coin({ winnerName = 'You', isChooser = true, onChoose, f
   };
 
   const onDown = (e) => {
+    if (!interactive) return;
     if (phase !== 'ready') return;
     setDragging(true);
     drag.current = { y: e.clientY, start: rot.current, moved: 0 };
     if (coinRef.current) coinRef.current.style.animation = 'none';
-    try { e.currentTarget.setPointerCapture(e.pointerId); } catch (_) {}
+    try { e.currentTarget.setPointerCapture(e.pointerId); } catch { /* Pointer capture is optional. */ }
   };
 
   const onMove = (e) => {
+    if (!interactive) return;
     if (!drag.current || phase !== 'ready') return;
     e.preventDefault();
     const dy = drag.current.y - e.clientY;
@@ -61,6 +70,7 @@ export default function Coin({ winnerName = 'You', isChooser = true, onChoose, f
   };
 
   const onUp = () => {
+    if (!interactive) return;
     if (!drag.current) return;
     const power = drag.current.moved;
     drag.current = null;
@@ -106,6 +116,12 @@ export default function Coin({ winnerName = 'You', isChooser = true, onChoose, f
     clearTimeout(failSafe.current);
   }, []);
 
+  useEffect(() => {
+    if (!autoLaunchKey || phase !== 'ready') return;
+    const t = setTimeout(() => launch(120), 250);
+    return () => clearTimeout(t);
+  }, [autoLaunchKey]); // eslint-disable-line react-hooks/exhaustive-deps
+
   return (
     <div
       className="hc-coin-stage"
@@ -117,7 +133,7 @@ export default function Coin({ winnerName = 'You', isChooser = true, onChoose, f
       <div
         ref={coinRef}
         className={`hc-coin ${phase === 'ready' && !dragging ? 'bob' : ''}`}
-        style={{ cursor: phase === 'ready' ? (dragging ? 'grabbing' : 'grab') : 'default' }}
+        style={{ cursor: interactive && phase === 'ready' ? (dragging ? 'grabbing' : 'grab') : 'default' }}
       >
         <CoinFace side="heads" />
         <CoinFace side="tails" />
@@ -125,7 +141,7 @@ export default function Coin({ winnerName = 'You', isChooser = true, onChoose, f
 
       <div className="hc-coin-shadow" style={{ opacity: phase === 'ready' ? 0.5 : 0.32 }} />
 
-      {phase === 'ready' && (
+      {phase === 'ready' && interactive && (
         <div className="hc-swipe-hint">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
             stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">

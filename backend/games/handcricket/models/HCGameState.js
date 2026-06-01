@@ -9,7 +9,13 @@ const hcGameStateSchema = new mongoose.Schema(
   {
     roomCode:    { type: String, required: true, unique: true },
     phase:       { type: String, default: 'toss' },
-    toss:        { winner: String, choice: String },
+    toss:        {
+      caller: String,
+      call: String,
+      result: String,
+      winner: String,
+      choice: String,
+    },
     battingRole: String,
     bowlingRole: String,
     scores: {

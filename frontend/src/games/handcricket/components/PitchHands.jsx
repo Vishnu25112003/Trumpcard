@@ -9,6 +9,8 @@ export default function PitchHands({
   waitingMe,
   waitingOpp,
   center,
+  myName = 'You',
+  oppName = 'Opponent',
 }) {
   return (
     <div className="hc-pitch">
@@ -25,7 +27,7 @@ export default function PitchHands({
           className="hc-hand-tag"
           style={{ color: myTone === 'gold' ? 'var(--gold)' : 'var(--purple-soft)' }}
         >
-          You
+          {myName}
         </div>
       </div>
 
@@ -44,7 +46,7 @@ export default function PitchHands({
           className="hc-hand-tag"
           style={{ color: oppTone === 'gold' ? 'var(--gold)' : 'var(--purple-soft)' }}
         >
-          Opponent
+          {oppName}
         </div>
       </div>
     </div>

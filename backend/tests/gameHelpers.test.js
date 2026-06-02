@@ -7,7 +7,7 @@ const {
   redistributeCards,
   resolveRound,
   getNextActiveTurn,
-} = require('../utils/gameHelpers');
+} = require('../games/trumpcard/utils/gameHelpers');
 
 // ─── shuffleArray ──────────────────────────────────────────────────────────────
 

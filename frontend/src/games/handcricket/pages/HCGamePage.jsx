@@ -378,6 +378,7 @@ export default function HCGamePage() {
       />
 
       <div
+        className="hc-game-shell"
         style={{
           position: 'relative', zIndex: 10, height: '100%',
           display: 'flex', flexDirection: 'column',
@@ -414,8 +415,8 @@ export default function HCGamePage() {
         )}
 
         {['picking', 'revealing'].includes(phase) && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: '4px 12px 0', flex: 1, minHeight: 0 }}>
-            <div style={{ display: 'flex', gap: 12, justifyContent: 'center', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+          <div className="hc-play-area" style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: '4px 12px 0', flex: 1, minHeight: 0 }}>
+            <div className="hc-score-row" style={{ display: 'flex', gap: 12, justifyContent: 'center', alignItems: 'flex-start', flexWrap: 'wrap' }}>
               <ScorePanel
                 name={myName} score={myScore} lives={myLives}
                 isBatting={isBatting} isMe accent="var(--purple-bright)"
@@ -424,6 +425,7 @@ export default function HCGamePage() {
 
               {chaseTarget != null && (
                 <div
+                  className="hc-target-chip"
                   style={{
                     alignSelf: 'center', padding: '8px 18px', borderRadius: 99,
                     background: 'rgba(94,236,255,0.1)',
@@ -506,18 +508,18 @@ function TossScreen({ toss, stage, myRole, hostName, guestName, onCall, onChoose
         Coin Toss
       </div>
 
-      <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+      <div className="hc-toss-players" style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
         <PlayerPill label="Host" name={hostName} active={toss.caller === 'host'} />
         <PlayerPill label="Guest" name={guestName} active={toss.caller === 'guest'} />
       </div>
 
       {!toss.call && (
-        <div style={{ textAlign: 'center', maxWidth: 420 }}>
+        <div className="hc-toss-call-panel" style={{ textAlign: 'center', maxWidth: 420 }}>
           <div style={{ fontFamily: 'var(--font-brand)', fontSize: 'clamp(20px,5vw,30px)', color: 'var(--gold)' }}>
             {callerName} calls the toss
           </div>
           {canCall ? (
-            <div style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 20 }}>
+            <div className="hc-toss-actions" style={{ display: 'flex', gap: 12, justifyContent: 'center', marginTop: 20 }}>
               <button className="btn btn-gold" style={{ fontSize: 13, padding: '13px 28px' }} onClick={() => onCall('heads')}>
                 Heads
               </button>
@@ -534,7 +536,7 @@ function TossScreen({ toss, stage, myRole, hostName, guestName, onCall, onChoose
       )}
 
       {toss.call && (
-        <div style={{ textAlign: 'center' }}>
+        <div className="hc-toss-result-panel" style={{ textAlign: 'center' }}>
           <div style={{ color: 'var(--text-soft)', fontSize: 13, marginBottom: 10 }}>
             {callerName} chose <span style={{ color: 'var(--gold)', textTransform: 'capitalize' }}>{toss.call}</span>
           </div>
@@ -556,6 +558,7 @@ function TossScreen({ toss, stage, myRole, hostName, guestName, onCall, onChoose
 function PlayerPill({ label, name, active }) {
   return (
     <div
+      className="hc-player-pill"
       style={{
         minWidth: 140,
         padding: '10px 14px',

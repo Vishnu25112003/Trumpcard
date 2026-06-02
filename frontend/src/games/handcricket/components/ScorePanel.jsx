@@ -9,6 +9,7 @@ export default function ScorePanel({
 }) {
   return (
     <div
+      className="hc-score-panel"
       style={{
         background: 'var(--surface-strong)',
         border: `1px solid ${flash ? 'var(--red)' : isBatting ? accent : 'var(--line)'}`,

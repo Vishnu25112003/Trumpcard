@@ -24,7 +24,7 @@ export default function HCTopBar({ modeLabel, phaseRole, onLeave }) {
         </div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      <div className="hc-top-actions">
         {phaseRole && (
           <div className="round-pill">
             {phaseRole === 'bat' ? '🏏 Batting' : '⚾ Bowling'}

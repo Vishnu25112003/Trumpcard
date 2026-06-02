@@ -4,6 +4,7 @@ import { usePlayer } from '../../../shared/context/PlayerContext';
 import { useHC } from '../context/HCContext';
 import { getSocket } from '../../../shared/socket/socket';
 import SparkleLayer from '../../../shared/components/SparkleLayer';
+import '../../../styles/hc-ui.css';
 
 export default function HCLobbyPage() {
   const { code }                   = useParams();
@@ -73,9 +74,9 @@ export default function HCLobbyPage() {
       <div className="table-bg" />
       <SparkleLayer />
 
-      <div className="center-screen">
+      <div className="center-screen hc-lobby-screen">
         {/* Room code */}
-        <div className="code-display" style={{ cursor: 'pointer' }} onClick={copyCode}>
+        <div className="code-display hc-lobby-code" style={{ cursor: 'pointer' }} onClick={copyCode}>
           <div className="label">Room Code</div>
           <div className="code">{code}</div>
           <div className="sub">{copied ? '✓ Copied!' : 'Tap to copy · Share with your friend'}</div>
@@ -98,7 +99,7 @@ export default function HCLobbyPage() {
         </div>
 
         {/* Players */}
-        <div style={{ width: '100%', maxWidth: 420, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div className="hc-lobby-players">
           <PlayerSlot name={hostN} label="Host" index={0} />
           <PlayerSlot name={guestN} label="Guest" index={1} waiting={!guestN} />
         </div>

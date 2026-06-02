@@ -273,22 +273,86 @@
 @keyframes hcFadeUp { from { transform: translateY(12px); } to { transform: translateY(0); } }
 @keyframes hcBannerIn { from { transform: translateY(-16px) scale(0.9); opacity: 0; } to { transform: translateY(0) scale(1); opacity: 1; } }
 
+/* ---------- HC HOME / DASHBOARD / LOBBY (shared base) ---------- */
+.hc-demo-balls {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.hc-demo-ball {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--surface-strong);
+  border: 2px solid;
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  flex-shrink: 0;
+}
+
+.hc-dash-screen {
+  padding-top: 96px;
+}
+
+.hc-dash-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.hc-dash-user-label {
+  color: var(--text-dim);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.hc-dash-user-name {
+  color: var(--gold);
+  font-weight: 600;
+}
+
+.hc-overs-grid {
+  grid-template-columns: repeat(6, 1fr);
+}
+.hc-wickets-grid {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.hc-lobby-screen {
+  padding-top: 60px;
+}
+.hc-lobby-players {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 /* ---------- RESPONSIVE HAND CRICKET LAYOUT ---------- */
 .hc-top-actions {
   display: flex;
   align-items: center;
   gap: 10px;
+  min-width: 0;
 }
 
 @media (max-width: 700px) {
   .hc-game-shell {
-    padding-top: 64px !important;
+    padding-top: calc(64px + env(safe-area-inset-top)) !important;
     padding-bottom: max(10px, env(safe-area-inset-bottom)) !important;
   }
 
   .top-bar {
     gap: 10px;
     align-items: flex-start;
+    padding-top: max(12px, env(safe-area-inset-top)) !important;
+    padding-left: max(14px, env(safe-area-inset-left)) !important;
+    padding-right: max(14px, env(safe-area-inset-right)) !important;
   }
 
   .hc-top-actions {
@@ -455,6 +519,98 @@
     min-width: 0;
     padding: 12px 14px !important;
   }
+
+  /* Home / Dashboard / Lobby on mobile */
+  .hc-home-screen {
+    padding: 70px 18px max(28px, env(safe-area-inset-bottom)) !important;
+  }
+
+  .hc-demo-balls {
+    gap: 8px;
+  }
+  .hc-demo-ball {
+    width: 46px;
+    height: 46px;
+    font-size: 20px;
+  }
+
+  .hc-dash-screen {
+    padding: 76px 16px max(28px, env(safe-area-inset-bottom)) !important;
+  }
+  .hc-dash-card {
+    padding: 18px !important;
+  }
+  .hc-dash-user-label {
+    display: none;
+  }
+
+  .hc-overs-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+  .hc-wickets-grid {
+    grid-template-columns: repeat(4, 1fr) !important;
+  }
+
+  .hc-lobby-screen {
+    padding: 70px 16px max(28px, env(safe-area-inset-bottom)) !important;
+  }
+  .hc-lobby-code {
+    padding: 18px !important;
+    margin-bottom: 12px !important;
+  }
+  .hc-lobby-code .code {
+    font-size: 28px !important;
+    letter-spacing: 0.16em !important;
+  }
+  .mini-stats {
+    gap: 8px !important;
+    margin-bottom: 12px !important;
+  }
+  .mini-stat {
+    padding: 10px 6px !important;
+  }
+  .mini-stat .v {
+    font-size: 22px !important;
+  }
+
+  /* InningsBreak / GameOver on mobile */
+  .hc-innings-break {
+    gap: 14px !important;
+    padding: 12px 16px !important;
+    max-width: 100% !important;
+  }
+  .hc-ib-score-card {
+    padding: 14px 16px !important;
+  }
+  .hc-ib-target {
+    padding: 12px 20px !important;
+  }
+  .hc-game-over {
+    gap: 14px !important;
+    padding: 12px 16px !important;
+  }
+  .hc-game-over-scores {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  .hc-game-over-scores .hc-score-panel {
+    flex: 1 1 120px;
+    min-width: 0;
+  }
+  .hc-game-over-actions {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    margin-top: 4px;
+  }
+  .hc-game-over-actions .btn {
+    flex: 1;
+    font-size: 12px;
+    padding: 12px 14px !important;
+  }
 }
 
 @media (max-width: 420px) {
@@ -529,6 +685,47 @@
   .hc-coin {
     width: 84px;
     height: 84px;
+  }
+
+  .hc-demo-ball {
+    width: 42px;
+    height: 42px;
+    font-size: 18px;
+  }
+
+  .hc-lobby-code .code {
+    font-size: 24px !important;
+  }
+  .mini-stat .v {
+    font-size: 19px !important;
+  }
+  .mini-stat .l {
+    font-size: 8px !important;
+    letter-spacing: 0.14em !important;
+  }
+
+  .player-row {
+    padding: 10px 12px;
+    gap: 10px;
+  }
+  .player-avatar {
+    width: 34px;
+    height: 34px;
+    font-size: 14px;
+  }
+  .player-row .name {
+    font-size: 13px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+  }
+
+  .hc-ib-score-card {
+    padding: 12px 14px !important;
+  }
+  .hc-game-over-scores .hc-score-panel {
+    flex: 1 1 110px;
   }
 }
 

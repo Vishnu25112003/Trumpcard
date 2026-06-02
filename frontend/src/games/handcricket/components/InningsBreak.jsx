@@ -9,6 +9,7 @@ export default function InningsBreak({
 }) {
   return (
     <div
+      className="hc-innings-break"
       style={{
         display: 'flex',
         flexDirection: 'column',
@@ -47,6 +48,7 @@ export default function InningsBreak({
       </div>
 
       <div
+        className="hc-ib-score-card"
         style={{
           width: '100%',
           background: 'var(--surface-strong)',
@@ -102,6 +104,7 @@ export default function InningsBreak({
       </div>
 
       <div
+        className="hc-ib-target"
         style={{
           padding: '14px 28px',
           background: 'rgba(94,236,255,0.1)',

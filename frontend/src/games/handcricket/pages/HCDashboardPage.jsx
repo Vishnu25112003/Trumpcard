@@ -4,6 +4,7 @@ import { usePlayer } from '../../../shared/context/PlayerContext';
 import { useHC } from '../context/HCContext';
 import api from '../../../shared/utils/api';
 import SparkleLayer from '../../../shared/components/SparkleLayer';
+import '../../../styles/hc-ui.css';
 
 const OVERS_OPTIONS   = [1, 2, 3, 5, 7, 10];
 const WICKETS_OPTIONS = [2, 3, 5, 10];
@@ -11,16 +12,16 @@ const WICKETS_OPTIONS = [2, 3, 5, 10];
 function TopBar({ playerName, onBack }) {
   return (
     <div className="top-bar">
-      <div className="brand" style={{ cursor: 'pointer' }} onClick={onBack}>
+      <div className="brand" style={{ cursor: 'pointer', minWidth: 0 }} onClick={onBack}>
         <div className="brand-mark" style={{ background: 'linear-gradient(135deg, var(--cyan), #2aa0c2)', color: '#0a3a4a' }}>🏏</div>
         <div className="brand-text">
           <div className="b1">The</div>
           <div className="b2" style={{ background: 'linear-gradient(180deg, var(--cyan), #2aa0c2)', WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Hand Cricket</div>
         </div>
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <span style={{ color: 'var(--text-dim)', fontSize: 12 }}>
-          Playing as <span style={{ color: 'var(--gold)', fontWeight: 600 }}>{playerName}</span>
+      <div className="hc-dash-user">
+        <span className="hc-dash-user-label">
+          Playing as <span className="hc-dash-user-name">{playerName}</span>
         </span>
         <button className="btn btn-ghost btn-sm" onClick={onBack}>Change</button>
       </div>
@@ -89,8 +90,8 @@ export default function HCDashboardPage() {
       <SparkleLayer />
       <TopBar playerName={playerName} onBack={handleChangeName} />
 
-      <div className="center-screen" style={{ paddingTop: 96 }}>
-        <div className="field-card" style={{ width: '100%', maxWidth: 420 }}>
+      <div className="center-screen hc-dash-screen">
+        <div className="field-card hc-dash-card" style={{ width: '100%', maxWidth: 420 }}>
           {/* Tabs */}
           <div className="tab-switch" style={{ marginBottom: 20 }}>
             <button className={tab === 'create' ? 'active' : ''} onClick={() => { setTab('create'); setCreateErr(''); }}>
@@ -134,7 +135,7 @@ export default function HCDashboardPage() {
               {wicketType === 'custom' && (
                 <div>
                   <label className="field-label">Wickets per Innings</label>
-                  <div className="option-grid" style={{ gridTemplateColumns: `repeat(${WICKETS_OPTIONS.length}, 1fr)` }}>
+                  <div className="option-grid hc-wickets-grid">
                     {WICKETS_OPTIONS.map(w => (
                       <button key={w} className={`opt${wickets === w ? ' active' : ''}`} onClick={() => setWickets(w)}>
                         {w}
@@ -147,7 +148,7 @@ export default function HCDashboardPage() {
               {/* Step 3 — Overs (always shown) */}
               <div>
                 <label className="field-label">Overs per Innings</label>
-                <div className="option-grid" style={{ gridTemplateColumns: `repeat(${OVERS_OPTIONS.length}, 1fr)` }}>
+                <div className="option-grid hc-overs-grid">
                   {OVERS_OPTIONS.map(o => (
                     <button key={o} className={`opt${overs === o ? ' active' : ''}`} onClick={() => setOvers(o)}>
                       {o}

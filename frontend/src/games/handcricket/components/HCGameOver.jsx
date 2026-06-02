@@ -33,6 +33,7 @@ export default function HCGameOver({
 }) {
   return (
     <div
+      className="hc-game-over"
       style={{
         flex: 1,
         display: 'flex',
@@ -70,7 +71,7 @@ export default function HCGameOver({
         {won ? 'You Win!' : 'You Lose'}
       </div>
 
-      <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+      <div className="hc-game-over-scores">
         <ScorePanel name={myName}  score={myScore}  isMe        accent="var(--purple-bright)" />
         <ScorePanel name={oppName} score={oppScore} isMe={false} accent="var(--pink)" />
       </div>
@@ -86,17 +87,15 @@ export default function HCGameOver({
         {reason || '✅ Match Complete'}
       </div>
 
-      <div style={{ display: 'flex', gap: 12, marginTop: 4 }}>
+      <div className="hc-game-over-actions">
         <button
           className="btn btn-gold"
-          style={{ fontSize: 13, padding: '13px 28px' }}
           onClick={onRematch}
         >
           Rematch ↩
         </button>
         <button
           className="btn btn-ghost"
-          style={{ fontSize: 13, padding: '13px 24px' }}
           onClick={onExit}
         >
           Exit

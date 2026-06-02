@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePlayer } from '../../../shared/context/PlayerContext';
 import SparkleLayer from '../../../shared/components/SparkleLayer';
+import '../../../styles/hc-ui.css';
 
 const DEMO_BALLS = [
   { label: '6', emoji: '🤙', color: 'var(--gold)' },
@@ -38,16 +39,12 @@ export default function HCHomePage() {
       <div className="table-bg" />
       <SparkleLayer />
 
-      <div className="center-screen" style={{ opacity: ready ? 1 : 0, transition: 'opacity 0.5s' }}>
+      <div className="center-screen hc-home-screen" style={{ opacity: ready ? 1 : 0, transition: 'opacity 0.5s' }}>
         {/* Ball row preview */}
-        <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
+        <div className="hc-demo-balls">
           {DEMO_BALLS.map((b) => (
-            <div key={b.label} style={{
-              width: 52, height: 52, borderRadius: '50%',
-              background: 'var(--surface-strong)',
-              border: `2px solid ${b.color}`,
-              display: 'grid', placeItems: 'center',
-              fontSize: 22,
+            <div key={b.label} className="hc-demo-ball" style={{
+              borderColor: b.color,
               boxShadow: `0 0 14px ${b.color}55`,
             }}>
               {b.emoji}

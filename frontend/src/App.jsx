@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom
 import { PlayerProvider, usePlayer } from './shared/context/PlayerContext';
 import { TrumpcardProvider } from './games/trumpcard/context/TrumpcardContext';
 import { HCProvider } from './games/handcricket/context/HCContext';
+import { RajaRaniProvider } from './games/rajarani/context/RajaRaniContext';
 import HubPage from './hub/pages/HubPage';
 import HomePage from './games/trumpcard/pages/HomePage';
 import DashboardPage from './games/trumpcard/pages/DashboardPage';
@@ -12,6 +13,11 @@ import HCHomePage from './games/handcricket/pages/HCHomePage';
 import HCDashboardPage from './games/handcricket/pages/HCDashboardPage';
 import HCLobbyPage from './games/handcricket/pages/HCLobbyPage';
 import HCGamePage from './games/handcricket/pages/HCGamePage';
+import RajaRaniHomePage from './games/rajarani/pages/RajaRaniHomePage';
+import RajaRaniDashboardPage from './games/rajarani/pages/RajaRaniDashboardPage';
+import RajaRaniLobbyPage from './games/rajarani/pages/RajaRaniLobbyPage';
+import RajaRaniGamePage from './games/rajarani/pages/RajaRaniGamePage';
+import RajaRaniResultsPage from './games/rajarani/pages/RajaRaniResultsPage';
 
 function ProtectedRoute({ children, fallback }) {
   const { playerName } = usePlayer();
@@ -34,6 +40,14 @@ function HandCricketLayout() {
   );
 }
 
+function RajaRaniLayout() {
+  return (
+    <RajaRaniProvider>
+      <Outlet />
+    </RajaRaniProvider>
+  );
+}
+
 function AppRoutes() {
   return (
     <Routes>
@@ -52,6 +66,14 @@ function AppRoutes() {
         <Route path="/hand-cricket/dashboard" element={<ProtectedRoute fallback="/hand-cricket"><HCDashboardPage /></ProtectedRoute>} />
         <Route path="/hand-cricket/lobby/:code" element={<ProtectedRoute fallback="/hand-cricket"><HCLobbyPage /></ProtectedRoute>} />
         <Route path="/hand-cricket/play/:code" element={<ProtectedRoute fallback="/hand-cricket"><HCGamePage /></ProtectedRoute>} />
+      </Route>
+
+      <Route element={<RajaRaniLayout />}>
+        <Route path="/rajarani" element={<RajaRaniHomePage />} />
+        <Route path="/rajarani/dashboard" element={<ProtectedRoute fallback="/rajarani"><RajaRaniDashboardPage /></ProtectedRoute>} />
+        <Route path="/rajarani/lobby/:code" element={<ProtectedRoute fallback="/rajarani"><RajaRaniLobbyPage /></ProtectedRoute>} />
+        <Route path="/rajarani/game/:code" element={<ProtectedRoute fallback="/rajarani"><RajaRaniGamePage /></ProtectedRoute>} />
+        <Route path="/rajarani/results/:code" element={<ProtectedRoute fallback="/rajarani"><RajaRaniResultsPage /></ProtectedRoute>} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

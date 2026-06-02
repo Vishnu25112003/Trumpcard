@@ -15,6 +15,10 @@ const COUNTDOWN_MS = 10_000;
 const TURN_TIMEOUT_MS = 10_000;
 const turnTimers = new Map();
 
+function samePlayer(a, b) {
+  return a?.trim().toLowerCase() === b?.trim().toLowerCase();
+}
+
 function clearTurnTimer(roomCode) {
   if (turnTimers.has(roomCode)) {
     clearTimeout(turnTimers.get(roomCode));
@@ -281,7 +285,7 @@ function setupSocket(io) {
           socket.emit('rajarani:error', 'Room not found');
           return;
         }
-        if (room.hostName !== playerName || room.hostSocketId !== socket.id) {
+        if (!samePlayer(room.hostName, playerName) || room.hostSocketId !== socket.id) {
           socket.emit('rajarani:error', 'Only the host can start');
           return;
         }
@@ -368,7 +372,7 @@ function setupSocket(io) {
         const code = roomCode?.toUpperCase();
         const room = await RRRoom.findOne({ roomCode: code });
         if (!room) return;
-        if (room.hostName !== playerName) {
+        if (!samePlayer(room.hostName, playerName)) {
           socket.emit('rajarani:error', 'Only the host can request rematch');
           return;
         }

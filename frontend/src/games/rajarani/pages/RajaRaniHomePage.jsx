@@ -32,7 +32,7 @@ export default function RajaRaniHomePage() {
         <h1 className="splash-title">Raja Rani</h1>
         <p className="splash-sub">Secret cards · Royal chain · Find the thief</p>
         <div className="stat-chips" style={{ marginBottom: 28 }}>
-          {['4-10 Players', 'Room Code', '10s Turns', 'Party Strategy'].map((text) => <span key={text} className="chip">{text}</span>)}
+          {['4-10 Players', 'Room Code', '30s Turns', 'Party Strategy'].map((text) => <span key={text} className="chip">{text}</span>)}
         </div>
         <form onSubmit={submit} className="field-card stack" style={{ width: '100%', maxWidth: 380 }}>
           <div>

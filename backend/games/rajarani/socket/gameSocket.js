@@ -12,7 +12,7 @@ const {
 } = require('../engine/chain');
 
 const COUNTDOWN_MS = 10_000;
-const TURN_TIMEOUT_MS = 10_000;
+const TURN_TIMEOUT_MS = 30_000;
 const turnTimers = new Map();
 
 function samePlayer(a, b) {
@@ -140,7 +140,11 @@ async function processPick(io, roomCode, pickerId, targetPlayerId, source = 'pla
 
   const eligible = eligibleTargets(gs);
   const picked = eligible.find((seat) => seat.playerId === targetPlayerId);
-  if (!picked) return;
+  if (!picked) {
+    // Target is no longer eligible (race condition or AFK); restart the turn to unblock the game
+    setTimeout(() => startTurn(io, roomCode), 500);
+    return;
+  }
 
   const searcherChar = gs.chainOrder[gs.currentSearchIndex];
   const correct = picked.card === target;
@@ -165,6 +169,7 @@ async function processPick(io, roomCode, pickerId, targetPlayerId, source = 'pla
         { playerId: searcher.playerId, character: searcherChar, score: scoreOf(searcherChar) },
         { playerId: picked.playerId, character: target, score: scoreOf(target) },
       ],
+      state: publicState(gs),
     });
 
     if (target === 'thief') {

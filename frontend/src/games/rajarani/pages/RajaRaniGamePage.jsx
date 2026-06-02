@@ -33,7 +33,15 @@ export default function RajaRaniGamePage() {
       socket.emit('rajarani:room:join', { roomCode: code, playerName });
     }
 
-    socket.on('rajarani:stateSync', ({ state: nextState }) => setState(nextState));
+    socket.on('rajarani:stateSync', ({ state: nextState }) => {
+      setState(nextState);
+      // Game page misses the countdown event (fired before this page mounts from lobby nav)
+      // so initialize the countdown timer here when the synced phase is countdown
+      if (nextState?.phase === 'countdown') setCountdown((c) => (c == null ? 10 : c));
+      if (nextState?.phase === 'ended' && nextState?.results) {
+        navigate(`/rajarani/results/${code}`, { state: { results: nextState.results } });
+      }
+    });
     socket.on('rajarani:countdown', ({ state: nextState, secondsLeft }) => {
       setState(nextState);
       setCountdown(secondsLeft);
@@ -59,14 +67,17 @@ export default function RajaRaniGamePage() {
       setMessage(`${source === 'timeout' ? 'Auto-picked' : 'Picked'} ${pickedName}: ${characterInfo(pickedCharacter).label} ${correct ? '✓' : '✕'}`);
     });
     socket.on('rajarani:swap', ({ state: nextState }) => setState(nextState));
+    socket.on('rajarani:locked', ({ state: nextState }) => { if (nextState) setState(nextState); });
+    socket.on('rajarani:afk', () => {});
     socket.on('rajarani:ended', ({ results, state: nextState }) => {
       setState(nextState);
+      setTurn(null);
       navigate(`/rajarani/results/${code}`, { state: { results } });
     });
     socket.on('rajarani:error', (msg) => alert(msg));
 
     return () => {
-      ['rajarani:stateSync', 'rajarani:countdown', 'rajarani:dealt', 'rajarani:yourCard', 'rajarani:viewState', 'rajarani:rajaRevealed', 'rajarani:turn', 'rajarani:pickResult', 'rajarani:swap', 'rajarani:ended', 'rajarani:error'].forEach((event) => socket.off(event));
+      ['rajarani:stateSync', 'rajarani:countdown', 'rajarani:dealt', 'rajarani:yourCard', 'rajarani:viewState', 'rajarani:rajaRevealed', 'rajarani:turn', 'rajarani:pickResult', 'rajarani:swap', 'rajarani:locked', 'rajarani:afk', 'rajarani:ended', 'rajarani:error'].forEach((event) => socket.off(event));
     };
   }, [code, playerName, navigate]);
 

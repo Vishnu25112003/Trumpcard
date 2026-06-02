@@ -4,6 +4,7 @@ const app = require('./app');
 const { registerSocket: registerTrumpcardSocket } = require('./games/trumpcard');
 const { registerSocket: registerHCSocket }        = require('./games/handcricket');
 const { registerSocket: registerRRSocket }        = require('./games/rajarani');
+const { registerSocket: registerTGSocket }        = require('./games/typing-game');
 
 const PORT = process.env.PORT || 5000;
 
@@ -20,6 +21,7 @@ const io = new Server(server, {
 registerTrumpcardSocket(io);
 registerHCSocket(io);
 registerRRSocket(io);
+registerTGSocket(io);
 
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

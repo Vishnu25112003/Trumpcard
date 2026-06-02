@@ -1,0 +1,23 @@
+{
+  "easy": [
+    { "id": "e1", "text": "The cat sat on the mat and watched the rain fall down the glass. A small bird flew by the window and sang a quiet song to the sky." },
+    { "id": "e2", "text": "We took a walk in the park and saw a big tree. The wind moved the leaves and a dog ran past us with a stick in his mouth." },
+    { "id": "e3", "text": "The sun went down behind the hill. The sky turned pink and gold and the first star came out above the lake near our home." },
+    { "id": "e4", "text": "She made hot tea and sat by the fire. The room was warm and quiet. A book was open on her lap and the clock made a slow tick." },
+    { "id": "e5", "text": "He rode his bike to the shop to get bread and milk. On the way back he saw a kite high in the wind above the small park." }
+  ],
+  "medium": [
+    { "id": "m1", "text": "Typing fast is a skill that grows with steady practice. Pay attention to your fingers, keep them on the home row, and try to look ahead at the next few words rather than the key under your hand." },
+    { "id": "m2", "text": "A good keyboard, a quiet room, and a relaxed wrist can do wonders for your speed. Most people improve faster when they focus on accuracy first and let the speed climb on its own over many short sessions." },
+    { "id": "m3", "text": "The little cabin sat at the edge of the forest where the trees grew tall and the path narrowed into a soft trail of pine needles. Smoke curled from the chimney and a yellow lantern glowed in the window." },
+    { "id": "m4", "text": "Engineers love systems that fail in obvious ways. A loud failure is easy to find and fix. A silent failure can hide for months and slowly corrupt the data behind the application before anyone notices the problem." },
+    { "id": "m5", "text": "Sailing across the bay, the small boat tilted with each gust of wind. The captain held the wheel firmly and watched the horizon while his crew adjusted the ropes and trimmed the sails for the open sea." }
+  ],
+  "hard": [
+    { "id": "h1", "text": "Quantum mechanics, despite its mathematical elegance, often produces results that feel deeply counterintuitive to the human mind, suggesting that our everyday assumptions about determinism, locality, and the nature of reality itself may be incomplete or fundamentally mistaken." },
+    { "id": "h2", "text": "The philosopher argued that consciousness cannot be reduced to mere computation, citing the qualitative character of subjective experience as evidence; her critics countered that such intuitions, however persuasive, do not constitute a rigorous demonstration against a functionalist account of the mind." },
+    { "id": "h3", "text": "Despite the orchestra's flawless rendition, the conductor remained dissatisfied; he believed the piece demanded a kind of restrained ferocity, a paradoxical quality that even the most accomplished musicians frequently struggle to convey without lapsing into either timidity or melodrama." },
+    { "id": "h4", "text": "Cryptographic protocols rely on assumptions that certain mathematical problems remain computationally infeasible; should a sufficiently powerful adversary, perhaps wielding a fault-tolerant quantum computer, ever materialize, large portions of our digital infrastructure would require an urgent and coordinated migration." },
+    { "id": "h5", "text": "She watched the metropolis exhale beneath a sodium-orange haze, its glittering geometry punctuated by sirens and laughter; somewhere amidst the labyrinthine boulevards a stranger was about to make a decision that would, quietly and without ceremony, alter the trajectory of her life." }
+  ]
+}

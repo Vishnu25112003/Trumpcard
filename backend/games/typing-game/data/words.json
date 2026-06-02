@@ -1,0 +1,25 @@
+{
+  "easy": [
+    "cat", "dog", "sun", "moon", "run", "jump", "blue", "red", "fast", "slow",
+    "type", "play", "game", "fun", "win", "code", "data", "ship", "wave", "fire",
+    "tree", "bird", "fish", "rain", "snow", "wind", "rock", "salt", "milk", "egg",
+    "park", "city", "road", "boat", "kite", "bell", "lake", "song", "moon", "star",
+    "tide", "leaf", "rose", "frog", "duck", "lion", "bear", "wolf", "deer", "swan",
+    "ring", "gold", "iron", "lamp", "page", "book", "desk", "chair", "door", "wall"
+  ],
+  "medium": [
+    "rocket", "puzzle", "garden", "monitor", "captain", "freedom", "harbor", "journey", "kitchen", "magnet",
+    "network", "ocean", "planet", "quartz", "rumble", "stitch", "tunnel", "violet", "wonder", "yellow",
+    "anchor", "bishop", "candle", "dragon", "ember", "forest", "gallery", "hammer", "island", "jungle",
+    "kettle", "ladder", "meadow", "needle", "orchid", "pebble", "raccoon", "saddle", "thunder", "umpire",
+    "village", "wallet", "yonder", "zephyr", "balloon", "compass", "diamond", "engine", "fossil", "gravity"
+  ],
+  "hard": [
+    "synthesis", "labyrinth", "quizzical", "juxtapose", "epiphany", "cathartic", "obfuscate", "ubiquitous",
+    "perpetual", "rhinoceros", "xylophone", "kaleidoscope", "metamorphic", "incandescent", "extravagant",
+    "consequence", "ostentatious", "philosophy", "magnanimous", "serendipity", "rhetorical", "pneumatic",
+    "ambiguous", "benevolent", "circumvent", "discrepancy", "exemplary", "fastidious", "garrulous", "harangue",
+    "iridescent", "jocularity", "kerfuffle", "loquacious", "malevolent", "nefarious", "officious", "perfunctory",
+    "quarantine", "recalcitrant", "soliloquy", "tantamount", "umbrella", "vindicate", "whimsical", "zealously"
+  ]
+}

@@ -35,6 +35,17 @@ const GAMES = [
     accent: 'var(--pink)',
     glow: 'rgba(255, 93, 158, 0.15)',
   },
+  {
+    id: 'typing-game',
+    icon: '⌨️',
+    title: 'Typing Game',
+    description: 'Defend your barrier from falling word bottles in Solo, or race friends to the end of a shared paragraph in Friends Mode. Type fast, type accurately.',
+    tags: ['Solo / Friends', 'Room Code', 'Skill'],
+    status: 'live',
+    path: '/typing-game',
+    accent: 'var(--green)',
+    glow: 'rgba(94, 224, 138, 0.18)',
+  },
 ];
 
 export default function HubPage() {
@@ -225,7 +236,7 @@ export default function HubPage() {
             justifyContent: 'center',
           }}>
             {[
-              { value: '2', label: 'Games Available' },
+              { value: '4', label: 'Games Available' },
               { value: '4', label: 'Max Players' },
               { value: '52', label: 'Anime Cards' },
               { value: '∞', label: 'Fun' },

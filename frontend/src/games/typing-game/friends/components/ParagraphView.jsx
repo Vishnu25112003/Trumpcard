@@ -13,7 +13,7 @@ function ParagraphView({ paragraph, cursorIndex, wrongAt }) {
     if (i < cursorIndex) cls = 'ch-correct';
     else if (i === cursorIndex && wrongAt === i) cls = 'ch-wrong';
     else if (i === cursorIndex) cls = 'ch-cursor';
-    chars.push(<span key={i} className={cls}>{ch === ' ' ? ' ' : ch}</span>);
+    chars.push(<span key={i} className={cls}>{ch}</span>);
   }
   return <div className="tg-paragraph">{chars}</div>;
 }

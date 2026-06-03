@@ -294,9 +294,15 @@
   color: rgba(255,255,255,0.55);
   user-select: none;
   letter-spacing: 0.02em;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  box-sizing: border-box;
+  width: min(900px, 100%);
   max-width: 900px;
   margin: 0 auto;
 }
+.tg-paragraph span { white-space: pre-wrap; }
 .tg-paragraph .ch-correct { color: var(--green); }
 .tg-paragraph .ch-wrong {
   color: var(--red);

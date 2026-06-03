@@ -149,8 +149,8 @@ export default function SoloGame() {
 
       totalKeystrokesRef.current += 1;
       const expected = bottle.word[bufferRef.current.length];
-      bufferRef.current += k;
       if (k === expected) {
+        bufferRef.current += k;
         correctCharsRef.current += 1;
         if (bufferRef.current === bottle.word) onWordComplete();
       } else {

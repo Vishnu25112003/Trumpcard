@@ -1,4 +1,7 @@
-export default function HUD({ level, cleared, goal, liveBoomCount, maxBooms }) {
+export default function HUD({ level, cleared, goal, liveBoomCount, maxBooms, lockedWord, lockedTypedIndex = 0 }) {
+  const typed = lockedWord ? lockedWord.slice(0, lockedTypedIndex) : '';
+  const remaining = lockedWord ? lockedWord.slice(lockedTypedIndex) : 'none';
+
   return (
     <div className="bt-hud">
       <div className="bt-hud-item">
@@ -12,6 +15,16 @@ export default function HUD({ level, cleared, goal, liveBoomCount, maxBooms }) {
       <div className="bt-hud-item">
         <span>Booms</span>
         <strong>{liveBoomCount}/{maxBooms}</strong>
+      </div>
+      <div className="bt-hud-item bt-hud-target">
+        <span>Target</span>
+        <strong>
+          {lockedWord ? (
+            <>
+              <mark>{typed}</mark>{remaining}
+            </>
+          ) : remaining}
+        </strong>
       </div>
     </div>
   );

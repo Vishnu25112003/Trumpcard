@@ -17,6 +17,8 @@ const INITIAL_CHROME = {
   liveBoomCount: 0,
   maxBoomsOnScreen: 3,
   bannerLevel: null,
+  lockedWord: null,
+  lockedTypedIndex: 0,
 };
 
 export default function SoloGame() {
@@ -91,21 +93,25 @@ export default function SoloGame() {
               goal={chrome.boomsGoalThisLevel}
               liveBoomCount={chrome.liveBoomCount}
               maxBooms={chrome.maxBoomsOnScreen}
+              lockedWord={chrome.lockedWord}
+              lockedTypedIndex={chrome.lockedTypedIndex}
             />
           )}
 
-          <canvas
-            ref={canvasRef}
-            className="bt-canvas"
-            tabIndex={0}
-            aria-label="Typing shooter canvas"
-          />
+          <div className="bt-playfield">
+            <canvas
+              ref={canvasRef}
+              className="bt-canvas"
+              tabIndex={0}
+              aria-label="Typing shooter canvas"
+            />
 
-          {chrome.status === 'menu' && <MenuScreen onStart={startGame} onBack={backToHub} />}
-          {chrome.status === 'gameover' && (
-            <GameOverScreen finalLevel={chrome.finalLevel} onRetry={startGame} onBack={backToHub} />
-          )}
-          {chrome.status === 'playing' && <LevelTransition level={chrome.bannerLevel} />}
+            {chrome.status === 'menu' && <MenuScreen onStart={startGame} onBack={backToHub} />}
+            {chrome.status === 'gameover' && (
+              <GameOverScreen finalLevel={chrome.finalLevel} onRetry={startGame} onBack={backToHub} />
+            )}
+            {chrome.status === 'playing' && <LevelTransition level={chrome.bannerLevel} />}
+          </div>
         </section>
       </main>
     </>

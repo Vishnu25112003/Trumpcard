@@ -62,6 +62,7 @@ export class BoomTyperEngine {
   }
 
   handleKey(char) {
+    this.clearInvalidLock();
     return handleLetterKey(this.state, char, performance.now());
   }
 
@@ -111,6 +112,7 @@ export class BoomTyperEngine {
 
     this.updateEffects(dtMs);
     this.removeDeadBooms();
+    this.clearInvalidLock();
 
     if (state.boomsClearedThisLevel >= state.boomsGoalThisLevel) {
       this.nextLevel(now);
@@ -178,6 +180,13 @@ export class BoomTyperEngine {
     state.booms = state.booms.filter((boom) => boom.status !== 'dead');
   }
 
+  clearInvalidLock() {
+    const locked = this.state.booms.find((boom) => boom.id === this.state.lockedBoomId);
+    if (!locked || (locked.status !== 'falling' && locked.status !== 'locked')) {
+      this.state.lockedBoomId = null;
+    }
+  }
+
   nextLevel(now) {
     const previous = this.state;
     const next = buildLevelState(previous.level + 1);
@@ -206,6 +215,7 @@ export class BoomTyperEngine {
   syncUi(now, force = false) {
     if (!force && now - this.lastUiSyncAt < 150) return;
     this.lastUiSyncAt = now;
+    const locked = this.state.booms.find((boom) => boom.id === this.state.lockedBoomId);
     this.callbacks.onUpdate?.({
       status: this.state.status,
       level: this.state.level,
@@ -214,6 +224,8 @@ export class BoomTyperEngine {
       boomsGoalThisLevel: this.state.boomsGoalThisLevel,
       liveBoomCount: this.state.booms.filter((boom) => boom.status !== 'dead' && boom.status !== 'blasting').length,
       maxBoomsOnScreen: this.state.maxBoomsOnScreen,
+      lockedWord: locked?.word ?? null,
+      lockedTypedIndex: locked?.typedIndex ?? 0,
       bannerLevel: this.state.bannerUntil > now ? this.state.bannerLevel : null,
     });
   }

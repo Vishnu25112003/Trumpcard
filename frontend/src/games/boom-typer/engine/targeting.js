@@ -20,6 +20,11 @@ export function handleLetterKey(state, char, now) {
     return true;
   }
 
+  if (locked.typedIndex >= locked.word.length) {
+    state.lockedBoomId = null;
+    return false;
+  }
+
   const nextChar = locked.word[locked.typedIndex];
   if (normalized !== nextChar) return false;
 

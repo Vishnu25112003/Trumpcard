@@ -1,7 +1,57 @@
-import { useRef } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/PortalPage.css';
-import { CircularGallery } from '../components/CircularGallery';
+
+const GAMES = [
+  {
+    id: 'trumpcard',
+    title: 'Anime Trumpcard',
+    icon: '🃏',
+    accent: 'var(--pp-c-anime)',
+    tags: ['2–4 Players', 'Multiplayer', 'Strategy'],
+    cats: ['card', 'multiplayer'],
+    desc: 'Battle anime character stats across 6 epic categories to collect every card and dominate the table.',
+    path: '/trumpcard',
+  },
+  {
+    id: 'hand-cricket',
+    title: 'Hand Cricket',
+    icon: '🏏',
+    accent: 'var(--pp-c-cricket)',
+    tags: ['2 Players', '1v1', 'Casual'],
+    cats: ['multiplayer'],
+    desc: 'Pick your number, outsmart your opponent, and chase the target in the classic 1v1 hand-cricket showdown.',
+    path: '/hand-cricket',
+  },
+  {
+    id: 'rajarani',
+    title: 'Raja Rani',
+    icon: '👑',
+    accent: 'var(--pp-c-raja)',
+    tags: ['4–10 Players', 'Room Code', 'Party'],
+    cats: ['multiplayer', 'party'],
+    desc: "Keep your card secret and follow the royal chain from Raja to Thief in this classic party game of bluff.",
+    path: '/rajarani',
+  },
+  {
+    id: 'boom-typer',
+    title: 'Boom Typer',
+    icon: '⌨️',
+    accent: 'var(--pp-c-boom)',
+    tags: ['Solo', 'Typing', 'Endless'],
+    cats: ['solo'],
+    desc: 'Blast falling booms by typing their words. Solo survival is live, with power booms that flood the screen.',
+    path: '/boom-typer',
+  },
+];
+
+const FILTERS = [
+  { id: 'all', label: 'All Games' },
+  { id: 'card', label: 'Card' },
+  { id: 'multiplayer', label: 'Multiplayer' },
+  { id: 'party', label: 'Party' },
+  { id: 'solo', label: 'Solo' },
+];
 
 const LEADERBOARD = [
   { rank: 1, name: 'NovaStrike',   game: 'Anime Trumpcard · 38 wins', score: '14,820', color: 'linear-gradient(150deg,#ffcf6b,#e08a2a)', initial: 'N' },
@@ -18,10 +68,10 @@ const ACTIVITY = [
 ];
 
 const CATEGORIES = [
-  { label: 'Card Battles',    meta: '1 game · Strategy', emoji: '🃏', accent: 'var(--pp-c-anime)',   path: '/trumpcard' },
-  { label: 'Party Games',     meta: '1 game · 4–10 players', emoji: '🎉', accent: 'var(--pp-c-raja)', path: '/rajarani' },
-  { label: 'Quick 1v1',       meta: '1 game · Casual',   emoji: '⚡', accent: 'var(--pp-c-cricket)', path: '/hand-cricket' },
-  { label: 'Solo Challenge',  meta: '1 game · Endless',  emoji: '🎯', accent: 'var(--pp-c-boom)',    path: '/boom-typer' },
+  { label: 'Card Battles',    meta: '1 game · Strategy', emoji: '🃏', accent: 'var(--pp-c-anime)',   filter: 'card' },
+  { label: 'Party Games',     meta: '1 game · 4–10 players', emoji: '🎉', accent: 'var(--pp-c-raja)', filter: 'party' },
+  { label: 'Quick 1v1',       meta: '1 game · Casual',   emoji: '⚡', accent: 'var(--pp-c-cricket)', filter: 'multiplayer' },
+  { label: 'Solo Challenge',  meta: '1 game · Endless',  emoji: '🎯', accent: 'var(--pp-c-boom)',    filter: 'solo' },
 ];
 
 const COLLECTIONS = [
@@ -56,7 +106,14 @@ const RAIL_ITEMS = [
 
 export default function PortalPage() {
   const navigate = useNavigate();
-  const galleryRef = useRef(null);
+  const [activeFilter, setActiveFilter] = useState('all');
+  const [search, setSearch] = useState('');
+
+  const visible = GAMES.filter(g => {
+    const matchCat = activeFilter === 'all' || g.cats.includes(activeFilter);
+    const matchSearch = !search || g.title.toLowerCase().includes(search.toLowerCase());
+    return matchCat && matchSearch;
+  });
 
   return (
     <div className="portal-page">
@@ -109,6 +166,7 @@ export default function PortalPage() {
               </svg>
               <input
                 type="text" placeholder="Search games…"
+                value={search} onChange={e => setSearch(e.target.value)}
               />
             </label>
             <span className="pp-coin-chip">
@@ -144,30 +202,38 @@ export default function PortalPage() {
           </div>
         </section>
 
-        {/* Game Gallery — circular 3-D carousel */}
-        <section className="pp-gallery-section" ref={galleryRef}>
-          <div className="pp-gallery-head">
-            <div>
-              <h2>Pick Your Game</h2>
-              <p className="pp-gallery-sub">4 arenas · hover to pause · click to play</p>
-            </div>
-            <span className="pp-live-badge">
-              <span className="pp-live-dot" />
-              4 LIVE NOW
-            </span>
-          </div>
-          <div className="pp-gallery-stage">
-            <CircularGallery onPlay={item => navigate(item.path)} />
-          </div>
+        {/* Filters */}
+        <div className="pp-filters">
+          {FILTERS.map(f => (
+            <button
+              key={f.id}
+              className={`pp-filter-tab${activeFilter === f.id ? ' active' : ''}`}
+              onClick={() => setActiveFilter(f.id)}
+            >
+              {f.label}
+            </button>
+          ))}
+          <span className="pp-filter-count">
+            {visible.length} {visible.length === 1 ? 'game' : 'games'}
+          </span>
+        </div>
+
+        {/* Game card grid */}
+        <section className="pp-grid">
+          {visible.map(game => (
+            <GameCard key={game.id} game={game} onPlay={() => navigate(game.path)} />
+          ))}
+          {visible.length === 0 && (
+            <div className="pp-empty">No games match your search.</div>
+          )}
         </section>
 
         {/* Browse by Category */}
         <section className="pp-row">
           <div className="pp-row-head">
             <h2>Browse by Category</h2>
-            <button className="pp-see-all"
-              onClick={() => galleryRef.current?.scrollIntoView({ behavior: 'smooth' })}>
-              View all
+            <button className="pp-see-all" onClick={() => setActiveFilter('all')}>
+              See all
               <svg viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
             </button>
           </div>
@@ -175,7 +241,7 @@ export default function PortalPage() {
             {CATEGORIES.map(cat => (
               <div key={cat.label} className="pp-cat-tile"
                 style={{ '--pp-cat-accent': cat.accent }}
-                onClick={() => navigate(cat.path)}>
+                onClick={() => setActiveFilter(cat.filter)}>
                 <span className="pp-cat-emoji">{cat.emoji}</span>
                 <div className="pp-cat-name">{cat.label}</div>
                 <div className="pp-cat-meta">{cat.meta}</div>
@@ -248,7 +314,7 @@ export default function PortalPage() {
             <span>© 2026 The GameHub — Always open.</span>
             <span className="links">
               <button onClick={() => navigate('/')}>Home</button>
-              <button onClick={() => galleryRef.current?.scrollIntoView({ behavior: 'smooth' })}>Games</button>
+              <button onClick={() => setActiveFilter('all')}>Games</button>
               <button onClick={() => document.querySelector('.pp-split')?.scrollIntoView({ behavior: 'smooth' })}>Leaderboard</button>
             </span>
           </div>
@@ -258,3 +324,34 @@ export default function PortalPage() {
   );
 }
 
+function GameCard({ game, onPlay }) {
+  return (
+    <article className="pp-card" onClick={onPlay} style={{ '--pp-card-accent': game.accent }}>
+      <div className="pp-cover">
+        <div className="pp-cover-tagchip">
+          <span className="pp-live-badge"><span className="pp-live-dot" />LIVE</span>
+        </div>
+        <div className="pp-cover-glyph">{game.icon}</div>
+        <div className="pp-cover-accentline" />
+        <div className="pp-play-overlay">
+          <button className="pp-play-btn" onClick={e => { e.stopPropagation(); onPlay(); }}>
+            <svg viewBox="0 0 24 24" fill="none"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>
+          </button>
+        </div>
+      </div>
+      <div className="pp-card-body">
+        <h3>{game.title}</h3>
+        <p className="pp-card-desc">{game.desc}</p>
+        <div className="pp-card-tags">
+          {game.tags.map(t => <span key={t} className="pp-tag">{t}</span>)}
+        </div>
+        <div className="pp-card-foot">
+          <button className="pp-btn pp-btn-gold pp-btn-sm" onClick={e => { e.stopPropagation(); onPlay(); }}>
+            Play Now
+            <svg viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </button>
+        </div>
+      </div>
+    </article>
+  );
+}

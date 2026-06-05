@@ -325,40 +325,6 @@
 .portal-page .pp-btn-ghost:hover { transform: translateY(-2px); border-color: var(--pp-violet); background: rgba(50,28,90,0.6); }
 .portal-page .pp-btn-sm { padding: 9px 14px; font-size: 11.5px; border-radius: 9px; }
 
-/* ── Circular game gallery ──────────────────────────────────── */
-.portal-page .pp-gallery-section {
-  margin: 28px 0 0;
-}
-.portal-page .pp-gallery-head {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 16px;
-  margin-bottom: 4px;
-}
-.portal-page .pp-gallery-head h2 {
-  font-family: var(--pp-font-display);
-  font-weight: 700;
-  font-size: 20px;
-  margin: 0;
-}
-.portal-page .pp-gallery-sub {
-  font-family: var(--pp-font-ui);
-  font-size: 12px;
-  color: var(--pp-text-faint);
-  letter-spacing: 0.04em;
-  margin: 5px 0 0;
-}
-.portal-page .pp-gallery-stage {
-  height: 480px;
-  position: relative;
-  overflow: hidden;
-  border-radius: var(--pp-radius-l);
-  border: 1px solid var(--pp-border);
-  background: linear-gradient(160deg, rgba(30,14,62,0.55), rgba(10,4,28,0.7));
-  margin-top: 16px;
-}
-
 /* ── Filters ────────────────────────────────────────────────── */
 .portal-page .pp-filters {
   display: flex; align-items: center; gap: 10px;

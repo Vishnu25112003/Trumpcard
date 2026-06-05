@@ -19,6 +19,7 @@ import RajaRaniLobbyPage from './games/rajarani/pages/RajaRaniLobbyPage';
 import RajaRaniGamePage from './games/rajarani/pages/RajaRaniGamePage';
 import RajaRaniResultsPage from './games/rajarani/pages/RajaRaniResultsPage';
 import BoomTyperSolo from './games/boom-typer';
+import PortalPage from './hub/pages/PortalPage';
 
 function ProtectedRoute({ children, fallback }) {
   const { playerName } = usePlayer();
@@ -53,6 +54,7 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<HubPage />} />
+      <Route path="/portal" element={<PortalPage />} />
       <Route path="/boom-typer" element={<BoomTyperSolo />} />
 
       <Route element={<TrumpcardLayout />}>

@@ -121,7 +121,30 @@ export default function PortalPage() {
           </div>
         </div>
 
-        {/* Game Gallery — circular 3-D carousel (hero, replaces banner) */}
+        {/* Featured banner */}
+        <section className="pp-featured">
+          <div className="pp-feat-glyph">🃏</div>
+          <div className="pp-feat-inner">
+            <div className="pp-feat-eyebrow">
+              <span className="pp-live-badge"><span className="pp-live-dot" />FEATURED · LIVE</span>
+              <span className="pp-feat-pill">Card Battle</span>
+            </div>
+            <h2>Anime Trumpcard</h2>
+            <p>Battle with anime character stats across 6 epic categories. Collect every card, outsmart the table, and crown yourself champion of the arena.</p>
+            <div className="pp-feat-cta">
+              <button className="pp-btn pp-btn-gold" onClick={() => navigate('/trumpcard')}>
+                Play Now
+                <svg viewBox="0 0 24 24" fill="none"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>
+              </button>
+              <button className="pp-btn pp-btn-ghost" onClick={() => navigate('/trumpcard')}>Create Room</button>
+            </div>
+          </div>
+          <div className="pp-feat-dots">
+            <span className="on" /><span /><span /><span />
+          </div>
+        </section>
+
+        {/* Game Gallery — circular 3-D carousel */}
         <section className="pp-gallery-section" ref={galleryRef}>
           <div className="pp-gallery-head">
             <div>

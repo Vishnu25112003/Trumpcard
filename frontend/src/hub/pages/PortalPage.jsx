@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/PortalPage.css';
 
@@ -108,12 +108,18 @@ export default function PortalPage() {
   const navigate = useNavigate();
   const [activeFilter, setActiveFilter] = useState('all');
   const [search, setSearch] = useState('');
+  const [featuredIdx, setFeaturedIdx] = useState(0);
 
   const visible = GAMES.filter(g => {
     const matchCat = activeFilter === 'all' || g.cats.includes(activeFilter);
     const matchSearch = !search || g.title.toLowerCase().includes(search.toLowerCase());
     return matchCat && matchSearch;
   });
+
+  useEffect(() => {
+    const t = setInterval(() => setFeaturedIdx(i => (i + 1) % GAMES.length), 4000);
+    return () => clearInterval(t);
+  }, []);
 
   return (
     <div className="portal-page">
@@ -179,28 +185,40 @@ export default function PortalPage() {
           </div>
         </div>
 
-        {/* Featured banner */}
-        <section className="pp-featured">
-          <div className="pp-feat-glyph">🃏</div>
-          <div className="pp-feat-inner">
-            <div className="pp-feat-eyebrow">
-              <span className="pp-live-badge"><span className="pp-live-dot" />FEATURED · LIVE</span>
-              <span className="pp-feat-pill">Card Battle</span>
-            </div>
-            <h2>Anime Trumpcard</h2>
-            <p>Battle with anime character stats across 6 epic categories. Collect every card, outsmart the table, and crown yourself champion of the arena.</p>
-            <div className="pp-feat-cta">
-              <button className="pp-btn pp-btn-gold" onClick={() => navigate('/trumpcard')}>
-                Play Now
-                <svg viewBox="0 0 24 24" fill="none"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>
-              </button>
-              <button className="pp-btn pp-btn-ghost" onClick={() => navigate('/trumpcard')}>Create Room</button>
-            </div>
-          </div>
-          <div className="pp-feat-dots">
-            <span className="on" /><span /><span /><span />
-          </div>
-        </section>
+        {/* Featured carousel */}
+        {(() => {
+          const f = GAMES[featuredIdx];
+          return (
+            <section className="pp-featured" style={{ '--feat-accent': f.accent }}>
+              <div className="pp-feat-glyph">{f.icon}</div>
+              <div className="pp-feat-inner">
+                <div className="pp-feat-eyebrow">
+                  <span className="pp-live-badge"><span className="pp-live-dot" />FEATURED · LIVE</span>
+                  <span className="pp-feat-pill">{f.tags[0]}</span>
+                </div>
+                <h2 style={{ color: f.accent }}>{f.title}</h2>
+                <p>{f.desc}</p>
+                <div className="pp-feat-cta">
+                  <button className="pp-btn pp-btn-gold" onClick={() => navigate(f.path)}>
+                    Play Now
+                    <svg viewBox="0 0 24 24" fill="none"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>
+                  </button>
+                  <button className="pp-btn pp-btn-ghost" onClick={() => navigate(f.path)}>Create Room</button>
+                </div>
+              </div>
+              <div className="pp-feat-dots">
+                {GAMES.map((g, i) => (
+                  <span
+                    key={g.id}
+                    className={i === featuredIdx ? 'on' : ''}
+                    style={i === featuredIdx ? { background: f.accent } : {}}
+                    onClick={() => setFeaturedIdx(i)}
+                  />
+                ))}
+              </div>
+            </section>
+          );
+        })()}
 
         {/* Filters */}
         <div className="pp-filters">
@@ -326,29 +344,17 @@ export default function PortalPage() {
 
 function GameCard({ game, onPlay }) {
   return (
-    <article className="pp-card" onClick={onPlay} style={{ '--pp-card-accent': game.accent }}>
+    <article className="pp-card pp-card-img" onClick={onPlay} style={{ '--pp-card-accent': game.accent }}>
       <div className="pp-cover">
         <div className="pp-cover-tagchip">
           <span className="pp-live-badge"><span className="pp-live-dot" />LIVE</span>
         </div>
         <div className="pp-cover-glyph">{game.icon}</div>
         <div className="pp-cover-accentline" />
+        <div className="pp-cover-name">{game.title}</div>
         <div className="pp-play-overlay">
           <button className="pp-play-btn" onClick={e => { e.stopPropagation(); onPlay(); }}>
             <svg viewBox="0 0 24 24" fill="none"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>
-          </button>
-        </div>
-      </div>
-      <div className="pp-card-body">
-        <h3>{game.title}</h3>
-        <p className="pp-card-desc">{game.desc}</p>
-        <div className="pp-card-tags">
-          {game.tags.map(t => <span key={t} className="pp-tag">{t}</span>)}
-        </div>
-        <div className="pp-card-foot">
-          <button className="pp-btn pp-btn-gold pp-btn-sm" onClick={e => { e.stopPropagation(); onPlay(); }}>
-            Play Now
-            <svg viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 6l6 6-6 6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
           </button>
         </div>
       </div>

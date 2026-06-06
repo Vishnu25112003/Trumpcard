@@ -40,7 +40,7 @@ const GAMES = [
     accent: 'var(--pp-c-boom)',
     tags: ['Solo', 'Typing', 'Endless'],
     cats: ['solo'],
-    desc: 'Blast falling booms by typing their words. Solo survival is live, with power booms that flood the screen.',
+    desc: 'Detonate falling word-bombs by typing them. Lock on, chain clean kills for a rising multiplier, and clear wave after wave before one crosses the danger line.',
     path: '/boom-typer',
   },
 ];

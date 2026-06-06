@@ -55,7 +55,7 @@ export class BoomTyperEngine {
     this.game = {
       wave: 1, score: 0, multiplier: 1,
       bombs: [], projectiles: [], particles: [], floaters: [],
-      lockedId: null,
+      lockedId: null, typedPrefix: '',
       spawnQueue: 0, spawnTimer: 0, spawnInterval: 1.4,
       waveTotal: 0, waveCleared: 0,
       keystrokes: 0, errors: 0, wordsCleared: 0,
@@ -242,12 +242,16 @@ export class BoomTyperEngine {
 
   uniqueWord(wave) {
     const pool = this.wordPoolForWave(wave);
-    const active = new Set(this.game.bombs.map((bb) => bb.word));
+    // Words that merely share a starting letter (e.g. "smoke" / "sweet") are
+    // allowed to coexist on purpose, so the prefix-disambiguation targeting in
+    // typeLetter() comes into play. We only reject:
+    //  - exact duplicates, and
+    //  - words where one is a full prefix of the other (e.g. "boo" / "boom"),
+    //    which would make the lock-on ambiguity impossible to resolve.
+    const active = this.game.bombs.filter((bb) => !bb.dead).map((bb) => bb.word);
     for (let i = 0; i < 30; i++) {
       const w = pick(pool);
-      if (active.has(w)) continue;
-      const fl = w[0];
-      const clash = this.game.bombs.some((bb) => bb.typed === 0 && bb.word[0] === fl);
+      const clash = active.some((aw) => aw === w || aw.startsWith(w) || w.startsWith(aw));
       if (!clash) return w;
     }
     return pick(pool);
@@ -260,6 +264,7 @@ export class BoomTyperEngine {
     g.bombs = [];
     g.projectiles = [];
     g.lockedId = null;
+    g.typedPrefix = '';
     g.waveTotal = 6 + wave * 2;
     g.waveCleared = 0;
     g.spawnQueue = g.waveTotal;
@@ -330,45 +335,68 @@ export class BoomTyperEngine {
     const g = this.game;
     g.keystrokes++;
 
-    let target = null;
+    // Already committed to a single bomb — keep firing at it letter by letter.
     if (g.lockedId != null) {
-      target = g.bombs.find((b) => b.id === g.lockedId && !b.dead);
-    }
-
-    if (!target) {
-      // acquire: lowest matching first-letter bomb
-      let bestB = null;
-      for (const b of g.bombs) {
-        if (b.dead) continue;
-        if (b.typed === 0 && b.word[0] === ch) {
-          if (!bestB || b.y > bestB.y) bestB = b;
+      const target = g.bombs.find((b) => b.id === g.lockedId && !b.dead);
+      if (target) {
+        const expected = target.word[target.typed];
+        if (expected === ch) {
+          target.typed++;
+          g.typedPrefix += ch;
+          this.fireProjectile(target);
+          if (target.typed >= target.word.length) this.destroyBomb(target);
+          else this.emit();
+        } else {
+          g.errors++;
+          g.multiplier = 1;
+          this.emit();
         }
-      }
-      if (bestB) {
-        target = bestB;
-        g.lockedId = bestB.id;
-      } else {
-        g.errors++;
-        g.multiplier = 1;
-        this.emit();
         return;
       }
+      g.lockedId = null; // locked bomb is gone — fall through and re-acquire
     }
 
-    const expected = target.word[target.typed];
-    if (expected === ch) {
-      target.typed++;
-      this.fireProjectile(target);
-      if (target.typed >= target.word.length) {
-        this.destroyBomb(target);
-      } else {
-        this.emit();
-      }
-    } else {
+    // Acquisition / disambiguation. Match the typed prefix against every live
+    // bomb. While MORE THAN ONE word shares the prefix we do NOT commit — we
+    // light them all up and wait for the next letter to narrow it down. So
+    // with "smoke" and "sweet" both falling, "s" keeps both lit; a following
+    // "w" locks onto "sweet", an "m" locks onto "smoke".
+    const prefix = g.typedPrefix + ch;
+    const candidates = g.bombs.filter((b) => !b.dead && b.word.startsWith(prefix));
+
+    if (candidates.length === 0) {
+      // nothing matches the extended prefix — a genuine miss
       g.errors++;
       g.multiplier = 1;
+      this.resetTargeting();
+      this.emit();
+      return;
+    }
+
+    g.typedPrefix = prefix;
+    // Light up the matched prefix on every candidate; clear any non-match.
+    for (const b of g.bombs) {
+      b.typed = (!b.dead && b.word.startsWith(prefix)) ? prefix.length : 0;
+    }
+
+    if (candidates.length === 1) {
+      // unambiguous — commit the lock and fire
+      const target = candidates[0];
+      g.lockedId = target.id;
+      this.fireProjectile(target);
+      if (target.typed >= target.word.length) this.destroyBomb(target);
+      else this.emit();
+    } else {
+      // still ambiguous — candidates stay highlighted, await next letter
       this.emit();
     }
+  }
+
+  // Clear the in-progress targeting prefix and any candidate highlights.
+  resetTargeting() {
+    this.game.lockedId = null;
+    this.game.typedPrefix = '';
+    for (const b of this.game.bombs) b.typed = 0;
   }
 
   fireProjectile(target) {
@@ -385,6 +413,7 @@ export class BoomTyperEngine {
     const g = this.game;
     target.dead = true;
     g.lockedId = null;
+    g.typedPrefix = '';
     g.wordsCleared++;
     g.waveCleared++;
     const gain = target.word.length * 5 * g.multiplier;
@@ -651,6 +680,10 @@ export class BoomTyperEngine {
     const fontPx = Math.max(15, Math.round(W * 0.034));
     for (const b of g.bombs) {
       const locked = b.id === g.lockedId;
+      // A "candidate" is one of several bombs still matching the typed prefix
+      // (ambiguous lock-on). It gets a dimmer version of the locked highlight.
+      const candidate = !locked && b.typed > 0;
+      const highlight = locked || candidate;
       const typedPart = b.word.slice(0, b.typed);
       const restPart = b.word.slice(b.typed);
 
@@ -664,12 +697,12 @@ export class BoomTyperEngine {
       const wordX = b.x - totalW / 2;
       const wordY = b.y - 18;
 
-      // locked highlight pill
-      if (locked) {
-        ctx.fillStyle = "rgba(255,157,46,0.10)";
+      // locked / candidate highlight pill (candidates are dimmer)
+      if (highlight) {
+        ctx.fillStyle = locked ? "rgba(255,157,46,0.10)" : "rgba(255,157,46,0.06)";
         roundRect(ctx, wordX - 9, wordY - fontPx * 0.62, totalW + 18, fontPx * 1.24, 6);
         ctx.fill();
-        ctx.strokeStyle = "rgba(255,157,46,0.45)";
+        ctx.strokeStyle = locked ? "rgba(255,157,46,0.45)" : "rgba(255,157,46,0.28)";
         ctx.lineWidth = 1;
         roundRect(ctx, wordX - 9, wordY - fontPx * 0.62, totalW + 18, fontPx * 1.24, 6);
         ctx.stroke();
@@ -686,13 +719,13 @@ export class BoomTyperEngine {
       // remaining letters — white (or accent if locked)
       ctx.shadowColor = "rgba(0,0,0,0.7)";
       ctx.shadowBlur = 4;
-      ctx.fillStyle = locked ? "#ffffff" : "#e7eeed";
+      ctx.fillStyle = highlight ? "#ffffff" : "#e7eeed";
       ctx.fillText(restPart, wordX + typedW, wordY);
       ctx.shadowBlur = 0;
 
       // bomb icon
       const ix = b.x, iy = b.y + fontPx * 0.5;
-      this.drawBombIcon(ix, iy, bombR, locked, b.fuse);
+      this.drawBombIcon(ix, iy, bombR, highlight, b.fuse);
 
       ctx.restore();
     }
@@ -855,6 +888,7 @@ export class BoomTyperEngine {
     this.game.bombs = [];
     this.game.projectiles = [];
     this.game.lockedId = null;
+    this.game.typedPrefix = '';
     this.showScreen("title");
   }
 

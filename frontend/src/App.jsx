@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { PlayerProvider, usePlayer } from './shared/context/PlayerContext';
 import { TrumpcardProvider } from './games/trumpcard/context/TrumpcardContext';
@@ -19,6 +20,13 @@ import RajaRaniLobbyPage from './games/rajarani/pages/RajaRaniLobbyPage';
 import RajaRaniGamePage from './games/rajarani/pages/RajaRaniGamePage';
 import RajaRaniResultsPage from './games/rajarani/pages/RajaRaniResultsPage';
 import BoomTyperSolo from './games/boom-typer';
+import { RaceProvider } from './games/boom-typer/race/context/RaceContext';
+// Race pages pull in three.js / react-three-fiber — lazy-load so that heavy
+// 3D bundle is only fetched when a player actually enters the Friends race.
+const RaceDashboardPage = lazy(() => import('./games/boom-typer/race/pages/RaceDashboardPage'));
+const RaceLobbyPage = lazy(() => import('./games/boom-typer/race/pages/RaceLobbyPage'));
+const RacePage = lazy(() => import('./games/boom-typer/race/pages/RacePage'));
+const RaceResultsPage = lazy(() => import('./games/boom-typer/race/pages/RaceResultsPage'));
 import PortalPage from './hub/pages/PortalPage';
 
 function ProtectedRoute({ children, fallback }) {
@@ -50,12 +58,34 @@ function RajaRaniLayout() {
   );
 }
 
+function BoomRaceLayout() {
+  return (
+    <RaceProvider>
+      <Suspense fallback={(
+        <div style={{
+          position: 'fixed', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: '#060809', color: '#8595928f', fontFamily: 'system-ui, sans-serif', letterSpacing: '0.1em',
+        }}>Loading race…</div>
+      )}>
+        <Outlet />
+      </Suspense>
+    </RaceProvider>
+  );
+}
+
 function AppRoutes() {
   return (
     <Routes>
       <Route path="/" element={<HubPage />} />
       <Route path="/portal" element={<PortalPage />} />
       <Route path="/boom-typer" element={<BoomTyperSolo />} />
+
+      <Route element={<BoomRaceLayout />}>
+        <Route path="/boom-typer/race" element={<RaceDashboardPage />} />
+        <Route path="/boom-typer/race/lobby/:code" element={<RaceLobbyPage />} />
+        <Route path="/boom-typer/race/play/:code" element={<RacePage />} />
+        <Route path="/boom-typer/race/results/:code" element={<RaceResultsPage />} />
+      </Route>
 
       <Route element={<TrumpcardLayout />}>
         <Route path="/trumpcard" element={<HomePage />} />

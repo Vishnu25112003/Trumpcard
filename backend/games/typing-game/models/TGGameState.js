@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const racePlayerSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
+    carId: { type: String, default: '' },            // 3D car for this racer
     progress: { type: Number, default: 0 },          // 0..1
     correctChars: { type: Number, default: 0 },
     totalKeystrokes: { type: Number, default: 0 },
@@ -27,12 +28,13 @@ const tgGameStateSchema = new mongoose.Schema(
     },
     difficulty: {
       type: String,
-      enum: ['easy', 'medium', 'hard'],
+      enum: ['easy', 'medium', 'large'],
       default: 'medium',
     },
     paragraph: { type: String, default: '' },
     paragraphId: { type: String, default: null },
     paragraphLength: { type: Number, default: 0 },
+    timeLimitSec: { type: Number, default: 0 },      // auto-scaled per length
     startedAt: { type: Date, default: null },
     finishOrderCount: { type: Number, default: 0 },
     players: [racePlayerSchema],

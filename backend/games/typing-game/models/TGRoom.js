@@ -6,6 +6,7 @@ const playerSchema = new mongoose.Schema(
     socketId: { type: String, default: '' },
     connected: { type: Boolean, default: false },
     isHost: { type: Boolean, default: false },
+    carId: { type: String, default: '' },   // distinct 3D car, auto-assigned
   },
   { _id: false }
 );
@@ -21,10 +22,10 @@ const tgRoomSchema = new mongoose.Schema(
     },
     hostName: { type: String, required: true, trim: true },
     hostSocketId: { type: String, default: '' },
-    maxPlayers: { type: Number, min: 2, max: 30, default: 8 },
+    maxPlayers: { type: Number, min: 2, max: 12, default: 6 },
     difficulty: {
       type: String,
-      enum: ['easy', 'medium', 'hard'],
+      enum: ['easy', 'medium', 'large'],
       default: 'medium',
     },
     players: [playerSchema],

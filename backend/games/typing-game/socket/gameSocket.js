@@ -4,6 +4,7 @@ const {
   pickParagraph,
   normalizeDifficulty,
   buildResults,
+  computeTimeLimitSec,
 } = require('../engine/raceEngine');
 const { computeWpm, computeAccuracy } = require('../engine/scoring');
 const {
@@ -47,6 +48,7 @@ function publicRoom(room) {
       playerId: p.name,
       connected: p.connected,
       isHost: p.isHost,
+      carId: p.carId || '',
     })),
   };
 }
@@ -60,10 +62,12 @@ function publicState(gs) {
     paragraph: gs.paragraph,
     paragraphId: gs.paragraphId,
     paragraphLength: gs.paragraphLength,
+    timeLimitSec: gs.timeLimitSec || 0,
     startedAt: gs.startedAt,
     players: gs.players.map((p) => ({
       playerId: p.name,
       name: p.name,
+      carId: p.carId || '',
       progress: p.progress || 0,
       finished: !!p.finished,
       rank: p.rank || null,
@@ -140,6 +144,7 @@ async function endRace(io, code, { capReached = false } = {}) {
 
 async function startCountdownAndRace(io, code, room) {
   const paragraph = pickParagraph(room.difficulty, room.lastParagraphId);
+  const timeLimitSec = computeTimeLimitSec(paragraph.text);
 
   await TGGameState.deleteOne({ roomCode: code });
   const gs = await TGGameState.create({
@@ -149,9 +154,10 @@ async function startCountdownAndRace(io, code, room) {
     paragraph: paragraph.text,
     paragraphId: paragraph.id,
     paragraphLength: paragraph.text.length,
+    timeLimitSec,
     players: room.players
       .filter((p) => p.connected && p.socketId)
-      .map((p) => ({ name: p.name, connected: true })),
+      .map((p) => ({ name: p.name, connected: true, carId: p.carId || '' })),
   });
 
   room.status = 'active';
@@ -161,6 +167,7 @@ async function startCountdownAndRace(io, code, room) {
   io.to(code).emit('typing:countdown', {
     seconds: COUNTDOWN_SECONDS,
     difficulty: room.difficulty,
+    timeLimitSec,
     state: publicState(gs),
   });
 
@@ -174,18 +181,21 @@ async function startCountdownAndRace(io, code, room) {
     io.to(code).emit('typing:race_start', {
       paragraph: fresh.paragraph,
       paragraphId: fresh.paragraphId,
+      timeLimitSec: fresh.timeLimitSec,
       startedAt: fresh.startedAt.toISOString(),
       state: publicState(fresh),
     });
 
     startProgressTicker(io, code);
 
+    // End at the auto-scaled limit, clamped by the absolute safety ceiling.
+    const capMs = Math.min((timeLimitSec || 0) * 1000 || RACE_CAP_MS, RACE_CAP_MS);
     clearCapTimer(code);
     capTimers.set(code, setTimeout(() => {
       endRace(io, code, { capReached: true }).catch((err) =>
         console.error('[TG] cap timeout error:', err.message)
       );
-    }, RACE_CAP_MS));
+    }, capMs));
   }, COUNTDOWN_SECONDS * 1000);
 }
 

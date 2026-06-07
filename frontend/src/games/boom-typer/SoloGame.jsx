@@ -74,6 +74,7 @@ export default function SoloGame() {
               <h1 className="wordmark">BOOM<span className="l2">TYPER</span></h1>
               <nav className="menu">
                 <button className="menu-item primary" onClick={() => act('start')}>new game</button>
+                <button className="menu-item" onClick={() => navigate('/boom-typer/race')}>friends race</button>
                 <button className="menu-item" onClick={() => act('howto')}>how to play</button>
                 <button className="menu-item" onClick={() => act('scores')}>high scores</button>
               </nav>

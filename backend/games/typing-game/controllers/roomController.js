@@ -1,6 +1,6 @@
 const TGRoom = require('../models/TGRoom');
 const TGGameState = require('../models/TGGameState');
-const { normalizeDifficulty } = require('../engine/raceEngine');
+const { normalizeDifficulty, assignCar } = require('../engine/raceEngine');
 const { MIN_PLAYERS, MAX_PLAYERS } = require('../config');
 
 function generateRoomCode() {
@@ -38,7 +38,7 @@ async function createRoom(req, res) {
       hostName: name,
       maxPlayers: size,
       difficulty: normalizeDifficulty(difficulty),
-      players: [{ name, socketId: '', connected: false, isHost: true }],
+      players: [{ name, socketId: '', connected: false, isHost: true, carId: assignCar([]) }],
       status: 'waiting',
       expiresAt: new Date(Date.now() + 10 * 60 * 1000),
     });
@@ -70,7 +70,8 @@ async function joinRoom(req, res) {
       return res.status(400).json({ success: false, error: 'Room is full' });
     }
     if (!alreadyIn) {
-      room.players.push({ name, socketId: '', connected: false, isHost: false });
+      const carId = assignCar(room.players.map((p) => p.carId));
+      room.players.push({ name, socketId: '', connected: false, isHost: false, carId });
       await room.save();
     }
 

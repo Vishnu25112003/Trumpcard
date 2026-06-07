@@ -1,5 +1,12 @@
 const paragraphsData = require('../data/paragraphs.json');
-const { DIFFICULTIES, DEFAULT_DIFFICULTY } = require('../config');
+const {
+  DIFFICULTIES,
+  DEFAULT_DIFFICULTY,
+  ASSUMED_MIN_WPM,
+  TIME_BUFFER,
+  MIN_TIME_LIMIT_SEC,
+  CAR_POOL,
+} = require('../config');
 
 function pickParagraph(difficulty, excludeId) {
   const pool = paragraphsData[difficulty] || paragraphsData[DEFAULT_DIFFICULTY];
@@ -10,6 +17,24 @@ function pickParagraph(difficulty, excludeId) {
 
 function normalizeDifficulty(value) {
   return DIFFICULTIES.includes(value) ? value : DEFAULT_DIFFICULTY;
+}
+
+// Auto-scale the match time limit from paragraph length so every mode is fair:
+// a slow-but-real typist (~ASSUMED_MIN_WPM) can finish, plus a small buffer.
+function computeTimeLimitSec(text) {
+  const wordCount = (text || '').trim().split(/\s+/).filter(Boolean).length;
+  const sec = Math.ceil((wordCount / ASSUMED_MIN_WPM) * 60 * TIME_BUFFER);
+  return Math.max(MIN_TIME_LIMIT_SEC, sec);
+}
+
+// Pick the first car in the pool not already taken in the room; cycle if the
+// pool is exhausted (more players than distinct cars).
+function assignCar(usedCarIds = []) {
+  const used = new Set(usedCarIds.filter(Boolean));
+  for (const id of CAR_POOL) {
+    if (!used.has(id)) return id;
+  }
+  return CAR_POOL[used.size % CAR_POOL.length];
 }
 
 function buildResults(gs, { capReached = false } = {}) {
@@ -50,4 +75,10 @@ function buildResults(gs, { capReached = false } = {}) {
   return { results, capReached };
 }
 
-module.exports = { pickParagraph, normalizeDifficulty, buildResults };
+module.exports = {
+  pickParagraph,
+  normalizeDifficulty,
+  buildResults,
+  computeTimeLimitSec,
+  assignCar,
+};

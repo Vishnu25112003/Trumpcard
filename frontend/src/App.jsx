@@ -21,8 +21,8 @@ import RajaRaniGamePage from './games/rajarani/pages/RajaRaniGamePage';
 import RajaRaniResultsPage from './games/rajarani/pages/RajaRaniResultsPage';
 import BoomTyperSolo from './games/boom-typer';
 import { RaceProvider } from './games/boom-typer/race/context/RaceContext';
-// Race pages pull in three.js / react-three-fiber — lazy-load so that heavy
-// 3D bundle is only fetched when a player actually enters the Friends race.
+// Race pages pull in three.js — lazy-load so that heavy 3D bundle is only
+// fetched when a player actually enters the Friends race.
 const RaceDashboardPage = lazy(() => import('./games/boom-typer/race/pages/RaceDashboardPage'));
 const RaceLobbyPage = lazy(() => import('./games/boom-typer/race/pages/RaceLobbyPage'));
 const RacePage = lazy(() => import('./games/boom-typer/race/pages/RacePage'));

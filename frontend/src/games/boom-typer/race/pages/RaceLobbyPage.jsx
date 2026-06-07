@@ -6,7 +6,11 @@ import api from '../../../../shared/utils/api';
 import { carLabel, carColor } from '../data/cars';
 import '../styles/race.css';
 
-const MODE_LABEL = { easy: 'Easy', medium: 'Medium', large: 'Large' };
+const MODES = [
+  { key: 'easy', label: 'Easy' },
+  { key: 'medium', label: 'Medium' },
+  { key: 'large', label: 'Large' },
+];
 
 export default function RaceLobbyPage() {
   const { code } = useParams();
@@ -23,83 +27,65 @@ export default function RaceLobbyPage() {
     if (!playerName) { navigate('/boom-typer/race'); return undefined; }
     const socket = getSocket();
     if (!socket.connected) socket.connect();
-
-    const onLobby = (nextRoom) => setRoom(nextRoom);
+    const onLobby = (next) => setRoom(next);
     const onCountdown = () => navigate(`/boom-typer/race/play/${roomCode}`);
-    const onError = () => {};
-
     socket.on('typing:lobby_update', onLobby);
     socket.on('typing:countdown', onCountdown);
-    socket.on('typing:error', onError);
-
     api.get(`/typing/rooms/${roomCode}`).then(({ data }) => setRoom(data.room)).catch(() => {});
-
-    if (!joined.current) {
-      joined.current = true;
-      socket.emit('typing:room:join', { roomCode, playerName });
-    }
-
-    return () => {
-      socket.off('typing:lobby_update', onLobby);
-      socket.off('typing:countdown', onCountdown);
-      socket.off('typing:error', onError);
-    };
+    if (!joined.current) { joined.current = true; socket.emit('typing:room:join', { roomCode, playerName }); }
+    return () => { socket.off('typing:lobby_update', onLobby); socket.off('typing:countdown', onCountdown); };
   }, [roomCode, playerName, navigate]);
 
   const start = () => getSocket().emit('typing:start', { roomCode, playerName });
   const setMode = (difficulty) => getSocket().emit('typing:set_difficulty', { roomCode, playerName, difficulty });
-  const leave = () => {
-    getSocket().emit('typing:leave', { roomCode, playerName });
-    navigate('/boom-typer/race');
-  };
-  const copyCode = () => {
-    navigator.clipboard?.writeText(roomCode).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1400);
-    }).catch(() => {});
-  };
+  const leave = () => { getSocket().emit('typing:leave', { roomCode, playerName }); navigate('/boom-typer/race'); };
+  const copyCode = () => navigator.clipboard?.writeText(roomCode).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1400); }).catch(() => {});
 
   const players = room?.players || [];
   const canStart = players.length >= 2;
 
   return (
-    <div className="bt-race-shell">
-      <button className="bt-hub-exit" onClick={leave}>← Leave</button>
-      <div className="bt-race-card wide">
-        <div className="bt-race-eyebrow">Lobby</div>
-        <button className="bt-roomcode" onClick={copyCode} title="Click to copy">
-          {roomCode} <span className="copy">{copied ? '✓ copied' : 'copy'}</span>
-        </button>
-        <div className="bt-race-meta">{MODE_LABEL[room?.difficulty] || 'Medium'} race · {players.length}/{room?.maxPlayers || 6} drivers</div>
+    <div className="ttd">
+      <div className="menu-bg" /><div className="topglow" />
+      <nav className="nav"><button className="btn-ghost" onClick={leave}>← Leave</button></nav>
 
-        <div className="bt-roster">
-          {players.map((p) => (
-            <div key={p.name} className={`bt-roster-row${p.name === playerName ? ' me' : ''}`}>
-              <span className="dot" style={{ background: carColor(p.carId) }} />
-              <span className="nm">{p.name === playerName ? '★ ' : ''}{p.name}{p.isHost ? ' (host)' : ''}</span>
-              <span className="car">{carLabel(p.carId)}</span>
-              <span className={`status${p.connected ? ' on' : ''}`}>{p.connected ? 'ready' : '…'}</span>
-            </div>
-          ))}
+      <div className="center">
+        <div className="card">
+          <p className="kicker">Lobby</p>
+          <button className="roomcode" onClick={copyCode} title="Click to copy">
+            {roomCode} <span className="cp">{copied ? '✓ copied' : 'copy'}</span>
+          </button>
+          <p className="meta-line">{players.length}/{room?.maxPlayers || 6} drivers · waiting room</p>
+
+          <div className="roster">
+            {players.map((p) => (
+              <div key={p.name} className={`roster-row${p.name === playerName ? ' me' : ''}`}>
+                <span className="dot" style={{ background: carColor(p.carId) }} />
+                <span className="nm">{p.name === playerName ? '★ ' : ''}{p.name}{p.isHost ? ' · host' : ''}</span>
+                <span className="car">{carLabel(p.carId)}</span>
+                <span className={`st${p.connected ? ' on' : ''}`}>{p.connected ? 'ready' : '…'}</span>
+              </div>
+            ))}
+          </div>
+
+          {isHost ? (
+            <>
+              <p className="field-label">Race Length</p>
+              <div className="seg">
+                {MODES.map((m) => (
+                  <div key={m.key} className={`seg-tile${room?.difficulty === m.key ? ' on' : ''}`} onClick={() => setMode(m.key)}>
+                    <b>{m.label}</b>
+                  </div>
+                ))}
+              </div>
+              <button className="btn-primary" onClick={start} disabled={!canStart}>
+                {canStart ? 'Start race →' : 'Need at least 2 drivers'}
+              </button>
+            </>
+          ) : (
+            <p className="wait">Waiting for the host to start…</p>
+          )}
         </div>
-
-        {isHost ? (
-          <>
-            <label className="bt-race-label">Race length</label>
-            <div className="bt-opt-row">
-              {['easy', 'medium', 'large'].map((m) => (
-                <button key={m} className={`bt-opt${room?.difficulty === m ? ' on' : ''}`} onClick={() => setMode(m)}>
-                  <b>{MODE_LABEL[m]}</b>
-                </button>
-              ))}
-            </div>
-            <button className="bt-btn primary" onClick={start} disabled={!canStart}>
-              {canStart ? 'Start race →' : 'Need at least 2 drivers'}
-            </button>
-          </>
-        ) : (
-          <div className="bt-race-wait">Waiting for the host to start…</div>
-        )}
       </div>
     </div>
   );

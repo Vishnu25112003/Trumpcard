@@ -3,10 +3,9 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { usePlayer } from '../../../../shared/context/PlayerContext';
 import { getSocket } from '../../../../shared/socket/socket';
 import api from '../../../../shared/utils/api';
-import { formatTime } from '../../../typing-game/shared/utils/typingMath';
 import '../styles/race.css';
 
-const MEDAL = { 1: '🥇', 2: '🥈', 3: '🥉' };
+const MEDALS = ['🥇', '🥈', '🥉'];
 
 export default function RaceResultsPage() {
   const { code } = useParams();
@@ -33,43 +32,43 @@ export default function RaceResultsPage() {
     return () => socket.off('typing:rematch_ready', onRematch);
   }, [roomCode, navigate]);
 
-  const rematch = () => {
+  const doRematch = () => {
     getSocket().emit('typing:rematch', { roomCode, playerName });
     navigate(`/boom-typer/race/lobby/${roomCode}`);
   };
 
   return (
-    <div className="bt-race-shell">
-      <button className="bt-hub-exit" onClick={() => navigate('/boom-typer')}>← Boom Typer</button>
-      <div className="bt-race-card wide">
-        <div className="bt-race-eyebrow">Photo finish</div>
-        <h2 className="bt-race-h">Results</h2>
+    <div className="ttd">
+      <div className="menu-bg" /><div className="topglow" />
+      <div className="center">
+        <div className="card res-card">
+          <p className="kicker">Photo Finish</p>
+          <h1 className="title" style={{ fontSize: 48, marginBottom: 14 }}>Results</h1>
 
-        <div className="bt-results">
-          <div className="bt-result-head">
-            <span className="rank">#</span>
-            <span className="name">Driver</span>
-            <span className="stat">WPM</span>
-            <span className="stat">Acc</span>
-            <span className="stat">Time</span>
-          </div>
-          {results.map((r) => (
-            <div key={r.playerId || r.name} className={`bt-result-row${r.name === playerName ? ' me' : ''}`}>
-              <span className="rank">{MEDAL[r.rank] || `#${r.rank}`}</span>
-              <span className="name">{r.name === playerName ? '★ ' : ''}{r.name}</span>
-              <span className="stat">{r.wpm}</span>
-              <span className="stat">{r.accuracy}%</span>
-              <span className={`stat${r.dnf ? ' dnf' : ''}`}>
-                {r.dnf ? `${Math.round((r.progress || 0) * 100)}%` : formatTime(r.finishMs)}
-              </span>
+          <div className="restable">
+            <div className="reshead">
+              <span />
+              <span>Driver</span>
+              <span className="r">WPM</span>
+              <span className="r">Acc</span>
+              <span className="r">Done</span>
             </div>
-          ))}
-          {!results.length && <div className="bt-race-wait">No results yet.</div>}
-        </div>
+            {results.map((c, i) => (
+              <div key={c.playerId || c.name} className={`resrow${c.name === playerName ? ' me' : ''}`}>
+                <span className="medal">{MEDALS[i] || <span style={{ color: '#5d655f' }}>{i + 1}</span>}</span>
+                <span className="drv">{c.name === playerName ? <span style={{ color: '#f59e1b' }}>★</span> : null}{c.name}</span>
+                <span className="num">{c.wpm}</span>
+                <span className="num acc">{c.accuracy != null ? c.accuracy + '%' : '—'}</span>
+                <span className="num win">{Math.round((c.progress || 0) * 100)}%</span>
+              </div>
+            ))}
+            {!results.length && <p className="wait">No results yet.</p>}
+          </div>
 
-        <div className="bt-btn-row">
-          {isHost && <button className="bt-btn primary" onClick={rematch}>Rematch →</button>}
-          <button className="bt-btn" onClick={() => navigate('/boom-typer')}>Back to Boom Typer</button>
+          <div className="res-actions">
+            {isHost && <button className="btn-primary" onClick={doRematch}>Rematch →</button>}
+            <button className="btn-secondary" onClick={() => navigate('/boom-typer/race')}>Back to Lobby</button>
+          </div>
         </div>
       </div>
     </div>

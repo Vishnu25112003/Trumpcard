@@ -28,6 +28,7 @@ export default function RacePage() {
   const [countdownText, setCountdownText] = useState(null);
   const [paragraph, setParagraph] = useState('');
   const [wrongAt, setWrongAt] = useState(null);
+  const [finishInfo, setFinishInfo] = useState(null);
 
   const canvasRef = useRef(null);
   const sceneRef = useRef(null);
@@ -46,6 +47,7 @@ export default function RacePage() {
   const cursorRef = useRef(0);
   const correctRef = useRef(0);
   const totalKeysRef = useRef(0);
+  const playerDoneRef = useRef(false);
 
   // HUD element refs
   const hudEls = useRef({});
@@ -131,9 +133,13 @@ export default function RacePage() {
     if (!scene || !players.length) return;
     const liveOf = (p) => (p.name === playerName ? myProgressRef.current : (p.progress || 0));
 
-    // sync scene progress + player speed
+    // decay typing speed when idle so the world coasts to a stop (no idle creep)
+    const sinceKey = (performance.now() - lastKeyRef.current) / 1000;
+    if (sinceKey > 0.35) cpsRef.current *= 0.92;
+
+    // sync scene progress + player speed (frozen once the player has finished)
     players.forEach((p) => scene.setProgress(p.name, liveOf(p)));
-    const norm = Math.max(0, Math.min(1, cpsRef.current / TARGET_CPS));
+    const norm = playerDoneRef.current ? 0 : Math.max(0, Math.min(1, cpsRef.current / TARGET_CPS));
     scene.setPlayerSpeed(norm);
 
     // speedo
@@ -293,6 +299,7 @@ export default function RacePage() {
       sceneRef.current = null;
       setupDone.current = false;
       joined.current = false;
+      playerDoneRef.current = false;
     };
   }, [roomCode, playerName, navigate, ensureSetup]);
 
@@ -312,6 +319,26 @@ export default function RacePage() {
     if (typing.correctChars < paragraph.length) return;
     finishedSent.current = true;
     getSocket().emit('typing:finished', { roomCode, playerName, correctChars: paragraph.length, totalKeystrokes: typing.totalKeystrokes, errors: typing.errors });
+
+    // Freeze the player's throttle and show the finish popup; rivals keep racing.
+    playerDoneRef.current = true;
+    sceneRef.current?.setPlayerSpeed(0);
+    const liveOf = (p) => (p.name === playerName ? 1 : (p.progress || 0));
+    const sorted = [...playersRef.current].sort((a, b) => {
+      if (a.finished && b.finished) return (a.rank || 99) - (b.rank || 99);
+      if (a.finished) return -1; if (b.finished) return 1;
+      return liveOf(b) - liveOf(a);
+    });
+    const pos = sorted.findIndex((p) => p.name === playerName) + 1 || 1;
+    const ord = ['st', 'nd', 'rd'][pos - 1] || 'th';
+    const elapsedMin = Math.max(0.001, (performance.now() - startedAtRef.current) / 60000);
+    setFinishInfo({
+      pos,
+      place: pos === 1 ? 'You won the race!' : `You crossed the line in ${pos}${ord} place`,
+      sub: pos === 1 ? '🏁 First across the finish line' : 'Rivals are still on track…',
+      wpm: Math.round((paragraph.length / 5) / elapsedMin),
+      acc: totalKeysRef.current ? Math.round((correctRef.current / totalKeysRef.current) * 100) : 100,
+    });
   }, [typing.correctChars, typing.totalKeystrokes, typing.errors, paragraph, phase, roomCode, playerName]);
 
   const quit = () => { getSocket().emit('typing:leave', { roomCode, playerName }); sceneRef.current?.stop(); navigate('/boom-typer/race'); };
@@ -374,6 +401,21 @@ export default function RacePage() {
             <div className="s">Warming up engines…</div>
           </div>
         )}
+
+        <div className={`finish-pop${finishInfo ? ' show' : ''}`}>
+          <div className="finish-card">
+            <div className="finish-flag">🏁</div>
+            <p className="kicker" style={{ marginBottom: 4 }}>Race Finished</p>
+            <div className="finish-pos">P{finishInfo?.pos ?? 1}</div>
+            <h2 className="finish-place">{finishInfo?.place ?? 'You finished!'}</h2>
+            <p className="finish-sub">{finishInfo?.sub ?? ''}</p>
+            <div className="finish-stats">
+              <div><span>{finishInfo?.wpm ?? 0}</span><label>WPM</label></div>
+              <div><span>{finishInfo?.acc ?? 100}%</span><label>Accuracy</label></div>
+            </div>
+            <button className="btn-primary" onClick={() => navigate(`/boom-typer/race/results/${roomCode}`)}>View full results →</button>
+          </div>
+        </div>
 
         <div className="typebox" ref={setEl('typebox')}>
           <div className="ttext">{chars}</div>

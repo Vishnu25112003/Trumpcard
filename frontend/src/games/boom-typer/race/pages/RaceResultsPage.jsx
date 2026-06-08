@@ -16,11 +16,24 @@ export default function RaceResultsPage() {
   const [results, setResults] = useState(location.state?.results || []);
   const [isHost, setIsHost] = useState(false);
 
+  const [waiting, setWaiting] = useState(false);
+
   useEffect(() => {
-    api.get(`/typing/rooms/${roomCode}/state`).then(({ data }) => {
-      if (!results.length && data.state?.results) setResults(data.state.results);
-      setIsHost(data.room?.hostName === playerName);
-    }).catch(() => {});
+    if (results.length) return undefined;
+    // The match may still be running (the player clicked "View full results"
+    // after finishing first). Poll until the server publishes final results.
+    let tries = 0;
+    let timer = null;
+    const poll = () => {
+      api.get(`/typing/rooms/${roomCode}/state`).then(({ data }) => {
+        setIsHost(data.room?.hostName === playerName);
+        if (data.state?.results?.length) { setResults(data.state.results); setWaiting(false); return; }
+        setWaiting(true);
+        if (++tries < 60) timer = setTimeout(poll, 1500);
+      }).catch(() => { if (++tries < 60) timer = setTimeout(poll, 1500); });
+    };
+    poll();
+    return () => { if (timer) clearTimeout(timer); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roomCode, playerName]);
 
@@ -62,7 +75,7 @@ export default function RaceResultsPage() {
                 <span className="num win">{Math.round((c.progress || 0) * 100)}%</span>
               </div>
             ))}
-            {!results.length && <p className="wait">No results yet.</p>}
+            {!results.length && <p className="wait">{waiting ? 'Rivals still racing… waiting for the finish.' : 'No results yet.'}</p>}
           </div>
 
           <div className="res-actions">

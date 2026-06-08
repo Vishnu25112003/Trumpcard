@@ -98,6 +98,14 @@ function makeCloudTex() {
   for (let i = 0; i < 22; i++) { const cx = 20 + Math.random() * 88, cy = 24 + Math.random() * 22, r = 10 + Math.random() * 16; const g = x.createRadialGradient(cx, cy, 1, cx, cy, r); g.addColorStop(0, 'rgba(255,255,255,.9)'); g.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = g; x.beginPath(); x.arc(cx, cy, r, 0, 7); x.fill(); }
   return new THREE.CanvasTexture(c);
 }
+function makeCheckerTex() {
+  const n = 8, cell = 24, W = n * cell, H = 2 * cell, c = cnv(W, H), x = c.getContext('2d');
+  for (let r = 0; r < 2; r++) for (let i = 0; i < n; i++) {
+    x.fillStyle = ((i + r) % 2 === 0) ? '#0d0d0d' : '#f4f1ea';
+    x.fillRect(i * cell, r * cell, cell, cell);
+  }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace || undefined; return t;
+}
 
 // ---- scenery factories ----------------------------------------------
 function matLambert(color) { return new THREE.MeshLambertMaterial({ color }); }
@@ -204,6 +212,7 @@ export class RaceScene {
     this.near = []; this.far = [];
     this._buildScenery();
     this._buildRail();
+    this._buildFinish();
 
     this.loader = new GLTFLoader();
     this.inited = true;
@@ -260,6 +269,30 @@ export class RaceScene {
     this.rail = g; this.scene.add(g);
   }
 
+  _buildFinish() {
+    if (this.finish) this.scene.remove(this.finish);
+    const g = new THREE.Group();
+    const postMat = matLambert(0xd23b3b);
+    for (const sx of [-8.4, 8.4]) {
+      const p = new THREE.Mesh(new THREE.CylinderGeometry(.3, .35, 6.4, 8), postMat);
+      p.position.set(sx, 3.2, 0); g.add(p);
+    }
+    const tex = makeCheckerTex();
+    tex.wrapS = THREE.RepeatWrapping; tex.repeat.set(8, 1);
+    const banner = new THREE.Mesh(new THREE.BoxGeometry(17.6, 1.7, .25),
+      new THREE.MeshBasicMaterial({ map: tex, fog: true }));
+    banner.position.set(0, 5.4, 0); g.add(banner);
+    const strip = new THREE.Mesh(new THREE.BoxGeometry(17.6, .45, .2),
+      new THREE.MeshBasicMaterial({ color: 0xf59e1b, fog: true }));
+    strip.position.set(0, 4.35, 0); g.add(strip);
+    const tex2 = makeCheckerTex(); tex2.wrapS = THREE.RepeatWrapping; tex2.repeat.set(8, 1);
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(16, 3),
+      new THREE.MeshBasicMaterial({ map: tex2, fog: true }));
+    ground.rotation.x = -Math.PI / 2; ground.position.set(0, 0.03, 0); g.add(ground);
+    g.position.z = 263; g.visible = false;
+    this.finish = g; this.scene.add(g);
+  }
+
   applyEnv(env, time) {
     this.env = env || this.env; this.time = time || this.time;
     const p = (ENVS[this.env] || ENVS.desert)[this.time] || ENVS.desert.day;
@@ -282,6 +315,8 @@ export class RaceScene {
   setup(opts) {
     this.applyEnv(opts.env || 'desert', opts.time || 'day');
     this.carList.forEach((c) => this.scene.remove(c.group)); this.cars = {}; this.carList = [];
+    this.scroll = 0; this.worldSpeed = 0; this.targetSpeed = 0;
+    if (this.finish) this.finish.position.z = 263;
     const list = opts.cars;
     let loaded = 0;
     return new Promise((resolve) => {
@@ -357,7 +392,8 @@ export class RaceScene {
 
   _update(dt) {
     this.worldSpeed += (this.targetSpeed - this.worldSpeed) * Math.min(1, dt * 3.2);
-    const idle = 0.10;
+    // NO idle creep: the world only moves while the player is actually typing.
+    const idle = 0;
     const spd = (idle + this.worldSpeed) * 56;
     this.scroll += spd * dt;
 
@@ -391,6 +427,13 @@ export class RaceScene {
       c.group.rotation.z = Math.sin(c.phase * 0.7) * 0.012 * (0.3 + bob);
       c.group.rotation.y = Math.sin(c.phase * 0.5) * 0.01;
       c.group.visible = c.group.position.z > -3.5;
+    }
+
+    // finish line approaches as the player progresses; crossed at 100%
+    if (this.finish) {
+      const fz = 8 + (1 - pProg) * 255;
+      this.finish.position.z += (fz - this.finish.position.z) * Math.min(1, dt * 4.5);
+      this.finish.visible = true;
     }
   }
 

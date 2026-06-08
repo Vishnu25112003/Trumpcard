@@ -209,6 +209,25 @@
 .ttd .loading .t{font-family:var(--font-display);font-weight:800;font-size:30px;text-transform:uppercase;letter-spacing:1px}
 .ttd .loading .s{font-size:13px;color:var(--ink-faint)}
 
+/* finish popup — shown the moment the player crosses the line */
+.ttd .finish-pop{position:absolute;inset:0;z-index:45;display:flex;align-items:center;justify-content:center;
+  background:rgba(4,6,5,.66);backdrop-filter:blur(6px);opacity:0;pointer-events:none;transition:opacity .3s}
+.ttd .finish-pop.show{opacity:1;pointer-events:auto}
+.ttd .finish-card{width:min(420px,92vw);text-align:center;
+  background:linear-gradient(180deg,#0e1311,#0a0d0c);border:1px solid var(--line-2);border-radius:22px;
+  padding:30px 32px 26px;box-shadow:var(--shadow);transform:translateY(12px) scale(.96);transition:transform .35s cubic-bezier(.5,1.5,.5,1)}
+.ttd .finish-pop.show .finish-card{transform:none}
+.ttd .finish-flag{font-size:42px;line-height:1}
+.ttd .finish-pos{font-family:var(--font-display);font-weight:800;font-size:80px;line-height:.85;color:var(--amber);
+  text-shadow:0 0 40px rgba(245,158,27,.45);margin:6px 0 4px}
+.ttd .finish-place{font-family:var(--font-display);font-weight:800;text-transform:uppercase;font-size:30px;
+  line-height:1;margin:0 0 6px}
+.ttd .finish-sub{color:var(--ink-dim);font-size:14px;margin:0 0 22px}
+.ttd .finish-stats{display:flex;gap:14px;margin:0 0 24px}
+.ttd .finish-stats > div{flex:1;background:#0c100e;border:1px solid var(--line);border-radius:13px;padding:13px 8px}
+.ttd .finish-stats span{display:block;font-family:var(--font-mono);font-weight:700;font-size:28px;color:var(--ink)}
+.ttd .finish-stats label{display:block;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-faint);font-weight:700;margin-top:3px}
+
 /* ============================================================
    RESULTS
    ============================================================ */

@@ -15,6 +15,19 @@ const WORDS = {
   epic: "absolute abstract academy accident accuracy accurate activate addition adequate advanced advisor aircraft alphabet analysis announce anything appendix approach approval aquarium argument artistic assemble athletic attitude audience aviation backbone bacteria baseball benchmark birthday blizzard blueprint boundary brewery brigade brilliant building campaign capacity carnival category ceremony champion chemical children cinnamon civilian clearance collapse colonial colorful combined commerce communal complete composer compound computer conclude concrete conflict congress conquest consider constant consumer contrast creative customer database daughter daylight dazzling decisive delegate delivery describe detector dialogue dinosaur director disaster discount discover disposal distance dividend doctrine document dominant dramatic duration dynamics earnings eclipse economic educate election elegant elevate eligible emerald emotion empire enchant".split(" "),
 };
 
+// Length-filtered banks: small/normal bombs use 4–5 letter words, power bombs
+// use 6–7 letter words. (The pools above contain no 3-letter words.)
+const ALL_WORDS = [...new Set([...WORDS.short, ...WORDS.mid, ...WORDS.long, ...WORDS.epic])];
+const NORMAL_WORDS = ALL_WORDS.filter((w) => w.length >= 4 && w.length <= 5);
+const POWER_WORDS = ALL_WORDS.filter((w) => w.length >= 6 && w.length <= 7);
+
+// ---------- Power-bomb tuning ----------
+const POWER_EMIT_SEC = 5;   // a falling power bomb drops a small bomb every 5s
+const STARTER_SMALL = 3;    // small bombs dripped at the start of a power level
+const POWER_RADIUS = 11;    // power bomb icon radius (normal = 7)
+// Power bombs per level: L1 = 0, L2 = 1, L3 = 2, L4 = 3, ...
+function powerCount(wave) { return wave >= 2 ? wave - 1 : 0; }
+
 const STATE = { TITLE: "title", PLAYING: "playing", PAUSED: "paused", WAVECLEAR: "waveclear", GAMEOVER: "gameover", HOWTO: "howto", SCORES: "scores" };
 const LS_KEY = "boomTyperBest";
 
@@ -56,8 +69,9 @@ export class BoomTyperEngine {
       wave: 1, score: 0, multiplier: 1,
       bombs: [], projectiles: [], particles: [], floaters: [],
       lockedId: null, typedPrefix: '',
-      spawnQueue: 0, spawnTimer: 0, spawnInterval: 1.4,
+      spawnPlan: [], spawnTimer: 0, spawnInterval: 1.4,
       waveTotal: 0, waveCleared: 0,
+      powerTotal: 0, powerKilled: 0,
       keystrokes: 0, errors: 0, wordsCleared: 0,
       runStart: 0, shake: 0,
       shipPulse: 0, shipRecoil: 0,
@@ -231,23 +245,13 @@ export class BoomTyperEngine {
   }
 
   // ---------- Word selection ----------
-  wordPoolForWave(wave) {
-    if (wave <= 1) return WORDS.short;
-    if (wave === 2) return Math.random() < 0.7 ? WORDS.short : WORDS.mid;
-    if (wave <= 4) return pick([WORDS.short, WORDS.mid, WORDS.mid]);
-    if (wave <= 6) return pick([WORDS.mid, WORDS.mid, WORDS.long]);
-    if (wave <= 8) return pick([WORDS.mid, WORDS.long, WORDS.long]);
-    return pick([WORDS.long, WORDS.long, WORDS.epic]);
-  }
-
-  uniqueWord(wave) {
-    const pool = this.wordPoolForWave(wave);
-    // Words that merely share a starting letter (e.g. "smoke" / "sweet") are
-    // allowed to coexist on purpose, so the prefix-disambiguation targeting in
-    // typeLetter() comes into play. We only reject:
-    //  - exact duplicates, and
-    //  - words where one is a full prefix of the other (e.g. "boo" / "boom"),
-    //    which would make the lock-on ambiguity impossible to resolve.
+  // Words that merely share a starting letter (e.g. "smoke" / "sweet") are
+  // allowed to coexist on purpose, so the prefix-disambiguation targeting in
+  // typeLetter() comes into play. We only reject:
+  //  - exact duplicates, and
+  //  - words where one is a full prefix of the other (e.g. "boo" / "boom"),
+  //    which would make the lock-on ambiguity impossible to resolve.
+  pickUnique(pool) {
     const active = this.game.bombs.filter((bb) => !bb.dead).map((bb) => bb.word);
     for (let i = 0; i < 30; i++) {
       const w = pick(pool);
@@ -257,7 +261,7 @@ export class BoomTyperEngine {
     return pick(pool);
   }
 
-  // ---------- Wave control ----------
+  // ---------- Wave / level control ----------
   startWave(wave) {
     const g = this.game;
     g.wave = wave;
@@ -265,15 +269,30 @@ export class BoomTyperEngine {
     g.projectiles = [];
     g.lockedId = null;
     g.typedPrefix = '';
-    g.waveTotal = 6 + wave * 2;
+    g.powerTotal = powerCount(wave);
+    g.powerKilled = 0;
+
+    // Build the drip plan. Level 1 = a plain wave of small bombs. Level 2+ =
+    // power bombs (front-loaded so they get descent time to emit) plus a few
+    // starter small bombs; the rest of the small bombs come from power emits.
+    if (g.powerTotal > 0) {
+      g.waveTotal = STARTER_SMALL;
+      g.spawnPlan = [
+        ...Array(g.powerTotal).fill('power'),
+        ...Array(STARTER_SMALL).fill('normal'),
+      ];
+    } else {
+      g.waveTotal = 6 + wave * 2;
+      g.spawnPlan = Array(g.waveTotal).fill('normal');
+    }
     g.waveCleared = 0;
-    g.spawnQueue = g.waveTotal;
     g.spawnInterval = Math.max(0.55, 1.5 - wave * 0.08);
     g.spawnTimer = 0.4;
     this.updateProgress();
   }
 
-  spawnBomb() {
+  // Find a well-separated x near the top, or null if too crowded to place.
+  _placeX() {
     const { W, H } = this;
     const g = this.game;
     const margin = 70;
@@ -289,28 +308,56 @@ export class BoomTyperEngine {
       if (minD > bestDist) { bestDist = minD; bestX = x; }
     }
     const minGap = Math.max(104, W * 0.26);
-    if (bestDist < minGap) return false; // too crowded near top — defer
+    return bestDist < minGap ? null : bestX;
+  }
 
-    const word = this.uniqueWord(g.wave);
+  spawnNormalBomb() {
+    const x = this._placeX();
+    if (x == null) return false; // too crowded — defer
+    const g = this.game;
     const baseSpeed = 18 + g.wave * 3.2;
     g.bombs.push({
       id: this.bombSeq++,
-      word, typed: 0,
-      x: bestX,
-      y: -20,
+      word: this.pickUnique(NORMAL_WORDS), typed: 0,
+      x, y: -20,
       vy: rand(baseSpeed, baseSpeed + 14) * this.TWEAKS.speedMul,
       drift: rand(-4, 4),
       r: 7,
       fuse: rand(0, Math.PI * 2),
+      power: false,
       dead: false,
     });
-    g.spawnQueue--;
+    return true;
+  }
+
+  spawnPowerBomb() {
+    const x = this._placeX();
+    if (x == null) return false;
+    const g = this.game;
+    const baseSpeed = 18 + g.wave * 3.2; // same speed as normal bombs
+    g.bombs.push({
+      id: this.bombSeq++,
+      word: this.pickUnique(POWER_WORDS), typed: 0,
+      x, y: -20,
+      vy: rand(baseSpeed, baseSpeed + 14) * this.TWEAKS.speedMul,
+      drift: rand(-4, 4),
+      r: POWER_RADIUS,
+      fuse: rand(0, Math.PI * 2),
+      power: true,
+      emitTimer: POWER_EMIT_SEC,
+      emitFlash: 0,
+      dead: false,
+    });
     return true;
   }
 
   updateProgress() {
     const g = this.game;
-    g.progressPct = g.waveTotal ? (g.waveCleared / g.waveTotal) * 100 : 0;
+    // On power levels the objective is destroying the power bombs; on level 1
+    // it's clearing the small-bomb wave.
+    g.progressPct = g.powerTotal > 0
+      ? (g.powerKilled / g.powerTotal) * 100
+      : (g.waveTotal ? (g.waveCleared / g.waveTotal) * 100 : 0);
     this.emit();
   }
 
@@ -416,31 +463,33 @@ export class BoomTyperEngine {
     g.typedPrefix = '';
     g.wordsCleared++;
     g.waveCleared++;
+    if (target.power) g.powerKilled++;
     const gain = target.word.length * 5 * g.multiplier;
     g.score += gain;
     g.multiplier = Math.min(99, g.multiplier + 1);
-    this.spawnExplosion(target.x, target.y);
+    this.spawnExplosion(target.x, target.y, target.power);
     this.spawnFloater(target.x, target.y, "+" + gain);
-    g.shake = Math.min(10, g.shake + 5);
+    g.shake = Math.min(target.power ? 16 : 10, g.shake + (target.power ? 10 : 5));
     this.updateProgress(); // emits
   }
 
-  spawnExplosion(x, y) {
-    const accent = this.TWEAKS.accent;
+  spawnExplosion(x, y, big = false) {
+    const accent = big ? "#ff5d9e" : this.TWEAKS.accent;
     const g = this.game;
-    for (let i = 0; i < 22; i++) {
+    const n = big ? 40 : 22;
+    for (let i = 0; i < n; i++) {
       const ang = Math.random() * Math.PI * 2;
-      const sp = rand(40, 230);
+      const sp = rand(40, big ? 320 : 230);
       g.particles.push({
         x, y,
         vx: Math.cos(ang) * sp,
         vy: Math.sin(ang) * sp,
-        life: 0, dur: rand(0.4, 0.9),
-        r: rand(1, 3.2),
+        life: 0, dur: rand(0.4, big ? 1.1 : 0.9),
+        r: rand(1, big ? 4.2 : 3.2),
         c: Math.random() < 0.55 ? accent : (Math.random() < 0.5 ? "#ffffff" : "#ff5e3a"),
       });
     }
-    g.particles.push({ ring: true, x, y, life: 0, dur: 0.45, r0: 6, r1: 46, c: accent });
+    g.particles.push({ ring: true, x, y, life: 0, dur: big ? 0.6 : 0.45, r0: 6, r1: big ? 80 : 46, c: accent });
   }
 
   spawnFloater(x, y, text) {
@@ -459,17 +508,30 @@ export class BoomTyperEngine {
     g.shipRecoil = Math.max(0, g.shipRecoil - dt * 6);
     g.shake = Math.max(0, g.shake - dt * 28);
 
-    // spawn
-    if (g.spawnQueue > 0) {
+    // spawn (drip from the plan)
+    if (g.spawnPlan.length > 0) {
       g.spawnTimer -= dt;
       if (g.spawnTimer <= 0) {
         const maxConcurrent = Math.min(6, 3 + Math.floor(g.wave / 2));
         if (g.bombs.length >= maxConcurrent) {
           g.spawnTimer = 0.3; // field full — hold
         } else {
-          const ok = this.spawnBomb();
-          g.spawnTimer = ok ? g.spawnInterval * rand(0.75, 1.25) : 0.22;
+          const type = g.spawnPlan[0];
+          const ok = type === 'power' ? this.spawnPowerBomb() : this.spawnNormalBomb();
+          if (ok) { g.spawnPlan.shift(); g.spawnTimer = g.spawnInterval * rand(0.75, 1.25); }
+          else { g.spawnTimer = 0.22; } // too crowded — retry shortly
         }
+      }
+    }
+
+    // power bombs emit a small bomb every POWER_EMIT_SEC while falling
+    for (const b of g.bombs) {
+      if (b.dead || !b.power) continue;
+      b.emitFlash = Math.max(0, b.emitFlash - dt);
+      b.emitTimer -= dt;
+      if (b.emitTimer <= 0) {
+        if (this.spawnNormalBomb()) { b.emitTimer = POWER_EMIT_SEC; b.emitFlash = 0.4; }
+        else { b.emitTimer = 0.4; } // field crowded — try again soon
       }
     }
 
@@ -498,8 +560,9 @@ export class BoomTyperEngine {
 
     this.stepParticles(dt);
 
-    // wave complete?
-    if (g.spawnQueue <= 0 && g.bombs.length === 0) {
+    // wave complete? (no more to drip, and nothing left alive — power bombs
+    // keep emitting while alive, so the level only ends once they're destroyed)
+    if (g.spawnPlan.length === 0 && !g.bombs.some((b) => !b.dead)) {
       this.waveClear();
     }
   }
@@ -725,28 +788,48 @@ export class BoomTyperEngine {
 
       // bomb icon
       const ix = b.x, iy = b.y + fontPx * 0.5;
-      this.drawBombIcon(ix, iy, bombR, highlight, b.fuse);
+      this.drawBombIcon(ix, iy, bombR, highlight, b.fuse, b.power, b.emitFlash || 0);
 
       ctx.restore();
     }
   }
 
-  drawBombIcon(x, y, r, locked, fuse) {
+  drawBombIcon(x, y, r, locked, fuse, power = false, emitFlash = 0) {
     const { ctx } = this;
     ctx.save();
+    // emit-flash ring (power bomb just spawned a child)
+    if (power && emitFlash > 0) {
+      const f = emitFlash / 0.4;
+      ctx.globalAlpha = f;
+      ctx.strokeStyle = "#ffe585";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(x, y, r + 16 * (1 - f), 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
     // body
     const grd = ctx.createRadialGradient(x - r * 0.35, y - r * 0.35, 0, x, y, r * 1.4);
-    grd.addColorStop(0, locked ? "#3a2a14" : "#1a2422");
-    grd.addColorStop(1, locked ? "#160d04" : "#0b110f");
+    if (power) {
+      grd.addColorStop(0, "#fff4b0");
+      grd.addColorStop(0.35, "#ff5d9e");
+      grd.addColorStop(1, "#68175d");
+    } else {
+      grd.addColorStop(0, locked ? "#3a2a14" : "#1a2422");
+      grd.addColorStop(1, locked ? "#160d04" : "#0b110f");
+    }
     ctx.fillStyle = grd;
+    if (power) { ctx.shadowColor = "#ff5d9e"; ctx.shadowBlur = 18; }
     ctx.beginPath();
     ctx.arc(x, y, r, 0, Math.PI * 2);
     ctx.fill();
+    ctx.shadowBlur = 0;
     // ring
-    ctx.strokeStyle = locked ? "rgba(255,157,46,0.9)" : "rgba(90,240,212,0.55)";
-    ctx.lineWidth = 1.4;
-    ctx.shadowColor = locked ? this.TWEAKS.accent : "rgba(90,240,212,0.6)";
-    ctx.shadowBlur = locked ? 10 : 5;
+    ctx.strokeStyle = power ? (locked ? "rgba(255,206,128,0.95)" : "rgba(255,93,158,0.85)")
+      : (locked ? "rgba(255,157,46,0.9)" : "rgba(90,240,212,0.55)");
+    ctx.lineWidth = power ? 2 : 1.4;
+    ctx.shadowColor = power ? "#ff5d9e" : (locked ? this.TWEAKS.accent : "rgba(90,240,212,0.6)");
+    ctx.shadowBlur = power ? 14 : (locked ? 10 : 5);
     ctx.beginPath();
     ctx.arc(x, y, r, 0, Math.PI * 2);
     ctx.stroke();

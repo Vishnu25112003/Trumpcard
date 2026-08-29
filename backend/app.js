@@ -12,15 +12,12 @@ connectDB();
 const app = express();
 
 const corsOptions = {
-  origin: true,                  // reflect request origin — allows any domain, required for credentials
+  origin: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
-  optionsSuccessStatus: 200,     // some browsers choke on 204 for preflight
+  optionsSuccessStatus: 200,
 };
 
-// Handle OPTIONS preflight for every route BEFORE any other middleware
-app.options(/(.*)/, cors(corsOptions));
 app.use(cors(corsOptions));
 
 app.use(express.json());
